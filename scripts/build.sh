@@ -251,13 +251,12 @@ EOF
 }
 
 build_deb() {
-  local pkg_dir="" debian_dir="" deb_path=""
+  local deb_path="${1:?missing deb path}"
+  local pkg_dir="" debian_dir=""
   need_cmd curl dpkg-deb install chmod chown mktemp
-  TMP_BUILD_DIR="$(mktemp -d -p /var/tmp "${PACKAGE_NAME}.XXXXXX")"
-  chmod 0755 "$TMP_BUILD_DIR"
+  [[ -n "$TMP_BUILD_DIR" ]] || die "TMP_BUILD_DIR is not initialized"
   pkg_dir="${TMP_BUILD_DIR}/${PACKAGE_NAME}_${PACKAGE_VERSION}_${PACKAGE_ARCH}"
   debian_dir="${pkg_dir}/DEBIAN"
-  deb_path="${TMP_BUILD_DIR}/${PACKAGE_NAME}_${PACKAGE_VERSION}_${PACKAGE_ARCH}.deb"
 
   install -d -m 0755 "$debian_dir" "${pkg_dir}/opt/gc-rg/bin" "${pkg_dir}/usr/bin" "${pkg_dir}/usr/share/gc-rg" "${pkg_dir}${SYSTEMD_DIR}"
   install -d -m 0750 "${pkg_dir}/etc/gc-rg" "${pkg_dir}/opt/gc-rg/evidence" "${pkg_dir}/opt/gc-rg/reports/daily" "${pkg_dir}/opt/gc-rg/tmp"
@@ -286,7 +285,6 @@ Description: Grafana Cloud daily report generator with SMTP delivery
 EOF
   dpkg-deb --build "$pkg_dir" "$deb_path" >/dev/null || die "failed to build deb package"
   chmod 0644 "$deb_path"
-  printf '%s\n' "$deb_path"
 }
 
 install_package() {
@@ -295,7 +293,10 @@ install_package() {
   need_cmd apt-get dpkg-deb systemctl curl mktemp
   usage
   confirm "Install gc-rg package?" || { info "Abort."; return 0; }
-  deb_path="$(build_deb)"
+  TMP_BUILD_DIR="$(mktemp -d -p /var/tmp "${PACKAGE_NAME}.XXXXXX")"
+  chmod 0755 "$TMP_BUILD_DIR"
+  deb_path="${TMP_BUILD_DIR}/${PACKAGE_NAME}_${PACKAGE_VERSION}_${PACKAGE_ARCH}.deb"
+  build_deb "$deb_path"
   apt-get install -y "$deb_path" || die "apt-get install failed"
   if [[ "$KEEP_DEB" == "true" ]]; then
     keep_path="${PWD}/${PACKAGE_NAME}_${PACKAGE_VERSION}_${PACKAGE_ARCH}.deb"

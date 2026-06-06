@@ -46,6 +46,12 @@ fi
 if ! grep -q 'ExecStart=/usr/bin/gc-rg run --quiet' "$INSTALLER"; then
   fail "systemd service does not use unified run command"
 fi
+if grep -q 'deb_path="$(build_deb)"' "$INSTALLER"; then
+  fail "installer captures noisy build_deb stdout as apt package path"
+fi
+if ! grep -q 'build_deb "$deb_path"' "$INSTALLER"; then
+  fail "installer does not pass explicit deb path to build_deb"
+fi
 
 [[ -x "${ROOT}/dist/gc-rg" ]] || fail "unified runtime is not executable"
 bash -n "${ROOT}/dist/gc-rg" || fail "unified runtime syntax check failed"
