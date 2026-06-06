@@ -25,14 +25,10 @@
 ### Install
 
 ```bash
-git clone https://github.com/naufalmng/gc-rg
-cd gc-rg
-go test ./...
-go build -o bin/gc-rg-generate ./cmd/generate-daily-report
-go build -o bin/gc-rg-email ./cmd/send-email-report
+curl -fsSL https://github.com/naufalmng/gc-rg/releases/latest/download/gc-rg.sh | sudo bash
 ```
 
-PDF generation requires `wkhtmltopdf` in `PATH`.
+The installer builds a real `.deb`, installs the Linux release binaries, creates `/etc/gc-rg/gc-rg.env`, and places the daily systemd timer on disk. PDF generation requires `wkhtmltopdf`; the package declares it as an apt dependency.
 
 ### Quick start
 
@@ -56,14 +52,10 @@ For full usage, configuration reference, architecture, scheduler setup, and desi
 ### Instalasi
 
 ```bash
-git clone https://github.com/naufalmng/gc-rg
-cd gc-rg
-go test ./...
-go build -o bin/gc-rg-generate ./cmd/generate-daily-report
-go build -o bin/gc-rg-email ./cmd/send-email-report
+curl -fsSL https://github.com/naufalmng/gc-rg/releases/latest/download/gc-rg.sh | sudo bash
 ```
 
-Generate PDF butuh `wkhtmltopdf` ada di `PATH`.
+Installer bikin `.deb`, install binary Linux release, buat `/etc/gc-rg/gc-rg.env`, dan taruh systemd timer harian di disk. Generate PDF butuh `wkhtmltopdf`; package mendeklarasikan itu sebagai dependency apt.
 
 ### Quick start
 

@@ -23,7 +23,7 @@ jobs:
       - name: Test
         run: go test ./...
 
-      - name: Build
+      - name: Build and verify installer
         run: |
-          go build -o bin/gc-rg-generate ./cmd/generate-daily-report
-          go build -o bin/gc-rg-email ./cmd/send-email-report
+          bash scripts/build.sh
+          bash tests/installer_smoke.sh

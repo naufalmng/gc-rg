@@ -36,21 +36,25 @@ It is intentionally evidence-first:
 
 ### Install
 
-Clone and build:
+One-liner installer, same model as `gc-hc`:
 
 ```bash
-git clone https://github.com/naufalmng/gc-rg
-cd gc-rg
-go test ./...
-go build -o bin/gc-rg-generate ./cmd/generate-daily-report
-go build -o bin/gc-rg-email ./cmd/send-email-report
+curl -fsSL https://github.com/naufalmng/gc-rg/releases/latest/download/gc-rg.sh | sudo bash
 ```
 
-Install `wkhtmltopdf` for PDF output:
+The installer builds a local `.deb`, installs the Linux release binaries into `/opt/gc-rg/bin`, creates `/etc/gc-rg/gc-rg.env`, installs `gc-rg.service` + `gc-rg.timer`, and lets apt track removal.
+
+Non-interactive:
 
 ```bash
-sudo apt-get update
-sudo apt-get install -y wkhtmltopdf ca-certificates
+curl -fsSL https://github.com/naufalmng/gc-rg/releases/latest/download/gc-rg.sh | sudo bash -s -- install --yes
+```
+
+Standalone:
+
+```bash
+curl -fsSL https://github.com/naufalmng/gc-rg/releases/latest/download/gc-rg.sh | bash -s -- standalone
+./gc-rg-standalone/bin/gc-rg-generate --date today --no-pdf
 ```
 
 If `wkhtmltopdf` is not available, generate Markdown only:
@@ -306,21 +310,25 @@ Prinsipnya evidence-first:
 
 ### Instalasi
 
-Clone dan build:
+One-liner installer, model sama seperti `gc-hc`:
 
 ```bash
-git clone https://github.com/naufalmng/gc-rg
-cd gc-rg
-go test ./...
-go build -o bin/gc-rg-generate ./cmd/generate-daily-report
-go build -o bin/gc-rg-email ./cmd/send-email-report
+curl -fsSL https://github.com/naufalmng/gc-rg/releases/latest/download/gc-rg.sh | sudo bash
 ```
 
-Install `wkhtmltopdf` untuk output PDF:
+Installer bikin `.deb` lokal, install binary Linux release ke `/opt/gc-rg/bin`, buat `/etc/gc-rg/gc-rg.env`, install `gc-rg.service` + `gc-rg.timer`, dan removal tetap dilacak apt.
+
+Non-interactive:
 
 ```bash
-sudo apt-get update
-sudo apt-get install -y wkhtmltopdf ca-certificates
+curl -fsSL https://github.com/naufalmng/gc-rg/releases/latest/download/gc-rg.sh | sudo bash -s -- install --yes
+```
+
+Standalone:
+
+```bash
+curl -fsSL https://github.com/naufalmng/gc-rg/releases/latest/download/gc-rg.sh | bash -s -- standalone
+./gc-rg-standalone/bin/gc-rg-generate --date today --no-pdf
 ```
 
 Kalau `wkhtmltopdf` belum ada, generate Markdown saja:

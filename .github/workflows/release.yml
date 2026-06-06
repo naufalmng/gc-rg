@@ -25,16 +25,16 @@ jobs:
       - name: Test
         run: go test ./...
 
-      - name: Build Linux assets
-        run: |
-          mkdir -p dist
-          GOOS=linux GOARCH=amd64 go build -o dist/gc-rg-generate-linux-amd64 ./cmd/generate-daily-report
-          GOOS=linux GOARCH=amd64 go build -o dist/gc-rg-email-linux-amd64 ./cmd/send-email-report
+      - name: Build release assets
+        run: bash scripts/build.sh
 
       - name: Build Windows assets
         run: |
           GOOS=windows GOARCH=amd64 go build -o dist/gc-rg-generate-windows-amd64.exe ./cmd/generate-daily-report
           GOOS=windows GOARCH=amd64 go build -o dist/gc-rg-email-windows-amd64.exe ./cmd/send-email-report
+
+      - name: Verify installer
+        run: bash tests/installer_smoke.sh
 
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
