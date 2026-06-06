@@ -20,7 +20,7 @@ INSTALLER="${ROOT}/dist/gc-rg.sh"
 
 [[ -x "$INSTALLER" ]] || fail "installer is not executable: $INSTALLER"
 
-if dpkg -s gc-rg >/dev/null 2>&1; then
+if dpkg-query -W -f='${db:Status-Abbrev}\n' gc-rg 2>/dev/null | grep -q '^ii'; then
   sudo apt-get remove -y gc-rg >/dev/null
 fi
 
@@ -46,7 +46,7 @@ test -x /usr/bin/gc-rg || fail "runtime command missing"
 test -L /usr/bin/gcrg || fail "short alias symlink missing"
 
 sudo apt-get remove -y gc-rg >/dev/null
-if dpkg -s gc-rg >/dev/null 2>&1; then
+if dpkg-query -W -f='${db:Status-Abbrev}\n' gc-rg 2>/dev/null | grep -q '^ii'; then
   fail "gc-rg package still installed after remove"
 fi
 
