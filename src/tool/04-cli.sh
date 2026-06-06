@@ -5,10 +5,10 @@ usage() {
 gc-rg - Grafana Cloud daily report generator
 
 Usage:
-  gc-rg onboard              configure + enable timer + show next steps
+  gc-rg onboard              interactive config + enable timer + next steps
   gc-rg config               create/update core config
   gc-rg config show          print sanitized config
-  gc-rg config smtp          create/update SMTP config
+  gc-rg config smtp          interactive SMTP config with provider templates
 
   gc-rg generate             generate report once
   gc-rg send                 send existing report

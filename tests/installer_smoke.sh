@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." >/dev/null && pwd -P)"
 INSTALLER="${ROOT}/dist/gc-rg.sh"
+TOOL="${ROOT}/dist/gc-rg"
 
 fail() {
   printf 'FAIL: %s\n' "$*" >&2
@@ -71,11 +72,29 @@ runtime_help="$("${ROOT}/dist/gc-rg" help)"
 [[ "$runtime_help" == *"gc-rg onboard"* ]] || fail "runtime help misses onboard"
 [[ "$runtime_help" == *"gcrg"* ]] || fail "runtime help misses gcrg"
 [[ "$runtime_help" == *"gc-rg run"* ]] || fail "runtime help misses run"
-if grep -q 'run_generate || true' "${ROOT}/src/tool/06-report.sh"; then
+if [[ "$runtime_help" == *"run_generate || true"* ]]; then
   fail "onboard must not auto-generate before evidence exists"
 fi
-if grep -q 'run_send || true' "${ROOT}/src/tool/06-report.sh"; then
+if [[ "$runtime_help" == *"run_send || true"* ]]; then
   fail "onboard must not auto-send before report exists"
+fi
+if ! grep -q 'tty_read_secret' "$TOOL"; then
+  fail "runtime tool missing secret-aware interactive input"
+fi
+if ! grep -q 'configure_smtp_interactive' "$TOOL"; then
+  fail "runtime tool missing interactive SMTP config flow"
+fi
+if ! grep -q 'configure_core_interactive' "$TOOL"; then
+  fail "runtime tool missing interactive core config flow"
+fi
+if ! grep -q 'smtp.gmail.com' "$TOOL"; then
+  fail "runtime tool missing SMTP provider template defaults"
+fi
+if ! grep -q 'OnCalendar=${GC_RG_SCHEDULE_ON_CALENDAR:-${SCHEDULE_ON_CALENDAR}}' "$TOOL"; then
+  fail "runtime tool does not apply configured schedule to systemd timer"
+fi
+if grep -q "GC_RG_EMAIL_PROVIDER='" "$TOOL"; then
+  fail "runtime config writer uses shell-only single-quote env format"
 fi
 if ! grep -q 'GC_RG_EVIDENCE_DIR=/opt/gc-rg/evidence' "$INSTALLER"; then
   fail "installer config misses consistent evidence dir"

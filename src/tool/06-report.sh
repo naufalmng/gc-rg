@@ -38,7 +38,7 @@ Onboard plan:
   2. Enable systemd timer:
      ${TIMER_NAME}
 
-  3. Show next steps for evidence import, report generation, and email dry-run.
+  3. Configure core paths and SMTP interactively unless --yes is passed.
 
 Fresh install does not generate or send yet because no evidence exists by default.
 Expected evidence layout:
@@ -50,7 +50,11 @@ EOF
     info "cancelled"
     return 0
   fi
-  write_default_config
+  if [[ "$YES" == "true" ]]; then
+    write_default_config
+  else
+    configure_all_interactive
+  fi
   enable_timer
   cat <<EOF
 

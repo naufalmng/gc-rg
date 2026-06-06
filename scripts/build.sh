@@ -175,7 +175,7 @@ write_config_example() {
   cat > "$target" <<'EOF'
 # GC-RG runtime config
 GC_RG_EMAIL_PROVIDER=gmail
-GC_RG_SMTP_HOST=
+GC_RG_SMTP_HOST=smtp.gmail.com
 GC_RG_SMTP_PORT=587
 GC_RG_SMTP_TLS=starttls
 GC_RG_SMTP_AUTH=on

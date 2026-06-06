@@ -31,16 +31,53 @@ mask_value() {
   fi
 }
 
-confirm() {
-  local question="${1:?missing question}"
+tty_read() {
+  local prompt="${1:?missing prompt}"
   local answer=""
-  [[ "$YES" == "true" ]] && return 0
-  if [[ ! -t 0 ]]; then
+  if [[ ! -r /dev/tty ]]; then
+    return 2
+  fi
+  printf '%s' "$prompt" > /dev/tty
+  IFS= read -r answer < /dev/tty || return 1
+  answer="$(printf '%s' "$answer" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+  printf '%s' "$answer"
+}
+
+tty_read_secret() {
+  local prompt="${1:?missing prompt}"
+  local answer=""
+  local stty_state=""
+  if [[ ! -r /dev/tty ]]; then
+    return 2
+  fi
+  stty_state="$(stty -g < /dev/tty)"
+  printf '%s' "$prompt" > /dev/tty
+  stty -echo < /dev/tty
+  if ! IFS= read -r answer < /dev/tty; then
+    stty "$stty_state" < /dev/tty
     return 1
   fi
-  printf '%s [Y/n] ' "$question" > /dev/tty
-  read -r answer < /dev/tty || return 1
-  [[ -z "$answer" || "$answer" =~ ^[Yy]$ ]]
+  stty "$stty_state" < /dev/tty
+  printf '\n' > /dev/tty
+  answer="$(printf '%s' "$answer" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+  printf '%s' "$answer"
+}
+
+confirm() {
+  local question="${1:?missing question}"
+  local default="${2:-y}"
+  local suffix="[Y/n]"
+  local answer=""
+  [[ "$YES" == "true" ]] && return 0
+  [[ "$default" =~ ^[Nn]$ ]] && suffix="[y/N]"
+  answer="$(tty_read "$question $suffix ")" || return 1
+  [[ -n "$answer" ]] || answer="$default"
+  [[ "$answer" =~ ^[Yy]([Ee][Ss])?$ ]]
+}
+
+quote_env() {
+  local value="${1:-}"
+  printf '%s' "$value" | sed 's/\\/\\\\/g; s/"/\\"/g'
 }
 
 runtime_bin() {

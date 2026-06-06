@@ -17,7 +17,14 @@ show_schedule() {
 
 enable_timer() {
   need_root || return 1
-  need_cmd systemctl || return 1
+  need_cmd systemctl mkdir || return 1
+  source_config
+  mkdir -p /etc/systemd/system/gc-rg.timer.d
+  cat > /etc/systemd/system/gc-rg.timer.d/override.conf <<EOF
+[Timer]
+OnCalendar=
+OnCalendar=${GC_RG_SCHEDULE_ON_CALENDAR:-${SCHEDULE_ON_CALENDAR}}
+EOF
   systemctl daemon-reload
   systemctl enable --now "$TIMER_NAME"
   ok "timer enabled: $TIMER_NAME"

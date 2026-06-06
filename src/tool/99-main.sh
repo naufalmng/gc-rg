@@ -5,7 +5,11 @@ main() {
 
   case "$ACTION" in
     onboard) onboard ;;
-    config) write_default_config ;;
+    config)
+      if [[ "$YES" == "true" ]]; then write_default_config
+      else configure_all_interactive
+      fi
+      ;;
     config-show) show_config ;;
     config-smtp) config_smtp ;;
     generate) run_generate ;;
