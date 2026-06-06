@@ -37,8 +37,8 @@ sudo bash -c '. /etc/gc-rg/gc-rg.env; test "$GC_RG_SCHEDULE_ON_CALENDAR" = "*-*-
 
 grep -q 'gc-rg run' /lib/systemd/system/gc-rg.service || fail "service misses unified run command"
 grep -q 'OnCalendar=' /lib/systemd/system/gc-rg.timer || fail "timer misses OnCalendar"
-grep -q 'GC_RG_REPORT_DIR=' /etc/gc-rg/gc-rg.env || fail "config missing report dir"
-grep -q 'GC_RG_SCHEDULE_ON_CALENDAR=' /etc/gc-rg/gc-rg.env || fail "config missing schedule"
+sudo grep -q 'GC_RG_REPORT_DIR=' /etc/gc-rg/gc-rg.env || fail "config missing report dir"
+sudo grep -q 'GC_RG_SCHEDULE_ON_CALENDAR=' /etc/gc-rg/gc-rg.env || fail "config missing schedule"
 
 test -x /opt/gc-rg/bin/gc-rg-generate || fail "generate binary missing"
 test -x /opt/gc-rg/bin/gc-rg-email || fail "email binary missing"
