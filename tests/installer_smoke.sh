@@ -52,6 +52,9 @@ fi
 if ! grep -q 'build_deb "$deb_path"' "$INSTALLER"; then
   fail "installer does not pass explicit deb path to build_deb"
 fi
+if ! grep -q 'GC_RG_ASSET_BASE_URL' "$INSTALLER"; then
+  fail "installer cannot override asset source for release verification"
+fi
 
 [[ -x "${ROOT}/dist/gc-rg" ]] || fail "unified runtime is not executable"
 bash -n "${ROOT}/dist/gc-rg" || fail "unified runtime syntax check failed"
@@ -72,6 +75,15 @@ if ! grep -q 'gc-rg run' "${ROOT}/documentation.md"; then
 fi
 if ! grep -q 'GC_RG_SCHEDULE_ON_CALENDAR' "${ROOT}/src/tool/05-config.sh"; then
   fail "config misses schedule environment support"
+fi
+if ! grep -q 'installer_live_ubuntu.sh' "${ROOT}/.github/workflows/ci.yml"; then
+  fail "CI does not run live Ubuntu installer verification"
+fi
+if ! grep -q 'installer_live_ubuntu.sh' "${ROOT}/.github/workflows/release.yml"; then
+  fail "release workflow does not run live Ubuntu installer verification"
+fi
+if ! grep -q 'GITHUB_REF_NAME' "${ROOT}/.github/workflows/release.yml"; then
+  fail "release workflow does not guard tag against VERSION"
 fi
 
 printf 'installer_smoke=pass\n'

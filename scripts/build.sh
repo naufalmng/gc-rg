@@ -38,6 +38,7 @@ PACKAGE_VERSION="__PACKAGE_VERSION__"
 PACKAGE_ARCH="amd64"
 PACKAGE_MAINTAINER="__PACKAGE_MAINTAINER__"
 PACKAGE_HOMEPAGE="__PACKAGE_HOMEPAGE__"
+ASSET_BASE_URL="${GC_RG_ASSET_BASE_URL:-${PACKAGE_HOMEPAGE}/releases/latest/download}"
 SYSTEMD_DIR="/lib/systemd/system"
 CONFIG_DIR="/etc/gc-rg"
 APP_DIR="/opt/gc-rg"
@@ -148,7 +149,12 @@ confirm() {
 }
 
 asset_url() {
-  printf '%s/releases/latest/download/%s\n' "$PACKAGE_HOMEPAGE" "$1"
+  local asset_name="${1:?missing asset name}"
+  if [[ "$ASSET_BASE_URL" == file://* ]]; then
+    printf '%s/%s\n' "${ASSET_BASE_URL%/}" "$asset_name"
+    return 0
+  fi
+  printf '%s/%s\n' "${ASSET_BASE_URL%/}" "$asset_name"
 }
 
 download_asset() {
@@ -156,7 +162,11 @@ download_asset() {
   local target="${2:?missing target}"
   local url="$(asset_url "$name")"
   step "Downloading $name"
-  curl -fsSL "$url" -o "$target" || die "download failed: $url"
+  if [[ "$url" == file://* ]]; then
+    cp "${url#file://}" "$target" || die "copy failed: $url"
+  else
+    curl -fsSL "$url" -o "$target" || die "download failed: $url"
+  fi
   chmod 0755 "$target"
 }
 
@@ -177,6 +187,7 @@ GC_RG_EMAIL_CC=
 GC_RG_EMAIL_SUBJECT_PREFIX=[GC-RG]
 GC_RG_REPORT_DIR=/opt/gc-rg/reports/daily
 GC_RG_WORKDIR=/opt/gc-rg
+GC_RG_SCHEDULE_ON_CALENDAR="*-*-* 08:00:00"
 EOF
 }
 

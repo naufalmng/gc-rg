@@ -27,3 +27,6 @@ jobs:
         run: |
           bash scripts/build.sh
           bash tests/installer_smoke.sh
+
+      - name: Live Ubuntu install verification
+        run: bash tests/installer_live_ubuntu.sh

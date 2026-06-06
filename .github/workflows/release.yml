@@ -25,6 +25,9 @@ jobs:
       - name: Test
         run: go test ./...
 
+      - name: Verify tag matches VERSION
+        run: test "v$(tr -d '[:space:]' < VERSION)" = "${GITHUB_REF_NAME}"
+
       - name: Build release assets
         run: bash scripts/build.sh
 
@@ -35,6 +38,9 @@ jobs:
 
       - name: Verify installer
         run: bash tests/installer_smoke.sh
+
+      - name: Live Ubuntu install verification
+        run: bash tests/installer_live_ubuntu.sh
 
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
