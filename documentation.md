@@ -265,7 +265,7 @@ go test ./...
 bash scripts/build.sh
 bash tests/installer_smoke.sh
 git add .
-git commit -m "feat: align gc-rg unified CLI and scheduling UX"
+git commit -m "fix: keep installer deb path clean"
 git push origin main
 git tag -a v$(cat VERSION) -m "Release v$(cat VERSION)"
 git push origin v$(cat VERSION)
@@ -549,7 +549,7 @@ go test ./...
 bash scripts/build.sh
 bash tests/installer_smoke.sh
 git add .
-git commit -m "feat: align gc-rg unified CLI and scheduling UX"
+git commit -m "fix: keep installer deb path clean"
 git push origin main
 git tag -a v$(cat VERSION) -m "Release v$(cat VERSION)"
 git push origin v$(cat VERSION)
