@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD013 MD024 -->
+
 # Documentation
 
 > 🇬🇧 [English](#english) · 🇮🇩 [Bahasa Indonesia](#bahasa-indonesia)
@@ -16,72 +18,78 @@
 6. [Scheduling](#scheduling)
 7. [How it's wired](#how-its-wired)
 8. [Build it yourself](#build-it-yourself)
-9. [Design choices](#design-choices)
+9. [Release](#release)
 10. [Troubleshooting](#troubleshooting)
 
 ### What it is
 
-`gc-rg` is a Go-based daily report generator for Grafana Cloud validation evidence. It reads local JSON evidence files, renders an operations-ready Markdown report, converts that report to PDF, then sends the PDF through SMTP when requested.
+`gc-rg` is a Go-based daily report generator for Grafana Cloud validation
+evidence. It reads local JSON evidence files, renders an operations-ready
+Markdown report, converts that report to PDF, then sends the PDF through SMTP.
 
 It is intentionally evidence-first:
 
-- **Prometheus long-range summary** becomes availability and resource-health sections.
-- **Latest validation summary** confirms which checks were present in the source bundle.
-- **Loki 24h scope evidence** becomes logs and error summary rows.
-- **Markdown report** remains human-readable and versionable.
-- **PDF report** becomes the email attachment for daily handoff.
-- **SMTP delivery** stays provider-agnostic and operator-owned.
+- Prometheus long-range evidence becomes availability and resource sections.
+- Latest validation evidence confirms which checks were present.
+- Loki 24h scope evidence becomes logs and error summary rows.
+- Markdown stays human-readable and versionable.
+- PDF becomes the email attachment for daily handoff.
+- SMTP delivery stays provider-agnostic and operator-owned.
 
-`gc-rg` does not scrape Grafana directly during email delivery. Generate first, validate files, then send. That separation makes daily scheduling safer on Linux and Windows.
+`gc-rg` now exposes one user-facing command, like `gc-hc`: use `gc-rg` or the
+short alias `gcrg`. Internal Go binaries remain implementation detail.
 
 ### Install
 
-One-liner installer, same model as `gc-hc`:
+One-liner installer:
 
 ```bash
 curl -fsSL https://github.com/naufalmng/gc-rg/releases/latest/download/gc-rg.sh | sudo bash
+sudo gc-rg onboard
 ```
 
-The installer builds a local `.deb`, installs the Linux release binaries into `/opt/gc-rg/bin`, creates `/etc/gc-rg/gc-rg.env`, installs `gc-rg.service` + `gc-rg.timer`, and lets apt track removal.
-
-Non-interactive:
+Non-interactive install:
 
 ```bash
 curl -fsSL https://github.com/naufalmng/gc-rg/releases/latest/download/gc-rg.sh | sudo bash -s -- install --yes
+sudo gc-rg onboard
 ```
 
-Standalone:
+Standalone install:
 
 ```bash
 curl -fsSL https://github.com/naufalmng/gc-rg/releases/latest/download/gc-rg.sh | bash -s -- standalone
-./gc-rg-standalone/bin/gc-rg-generate --date today --no-pdf
+./gc-rg-standalone/gcrg generate --date today
+./gc-rg-standalone/gcrg send --dry-run
 ```
 
-If `wkhtmltopdf` is not available, generate Markdown only:
-
-```bash
-./bin/gc-rg-generate --date today --no-pdf
-```
+The installer builds a local `.deb`, installs Linux release binaries into
+`/opt/gc-rg/bin`, installs `/usr/bin/gc-rg`, adds `/usr/bin/gcrg`, creates
+`/etc/gc-rg/gc-rg.env`, and installs `gc-rg.service` + `gc-rg.timer`.
 
 ### Commands
 
 | Command | What it does |
 | --- | --- |
-| `gc-rg-generate --date today` | Generate Markdown + PDF from default evidence paths |
-| `gc-rg-generate --date 2026-06-05 --no-pdf` | Generate Markdown only |
-| `gc-rg-generate --output-dir reports/daily` | Override report output directory |
-| `gc-rg-generate --long-range-json PATH` | Override long-range Prometheus evidence path |
-| `gc-rg-generate --latest-json PATH` | Override latest validation evidence path |
-| `gc-rg-generate --loki-scope-json PATH` | Override optional Loki scope evidence path |
-| `gc-rg-email --date today --dry-run` | Validate report files, SMTP config, and MIME build without sending |
-| `gc-rg-email --date today --send` | Send PDF attachment through SMTP |
-| `gc-rg-email --report-dir PATH` | Read report files from a custom directory |
-
-Email flags mirror environment variables: `--email-provider`, `--smtp-host`, `--smtp-port`, `--smtp-tls`, `--email-from`, `--email-to`, `--email-cc`, `--smtp-username`, `--smtp-password`, and `--email-subject-prefix`.
+| `gc-rg onboard` | Create config, enable timer, run first dry-run |
+| `gc-rg config` | Create/update core config |
+| `gc-rg config show` | Print sanitized config with secrets masked |
+| `gc-rg config smtp` | Create/update SMTP config |
+| `gc-rg generate --date today` | Generate Markdown + PDF |
+| `gc-rg send --dry-run` | Validate report, SMTP config, MIME only |
+| `gc-rg send --send` | Send PDF attachment through SMTP |
+| `gc-rg run --date today` | Generate report, then send email |
+| `gc-rg schedule` | Show systemd timer schedule |
+| `gc-rg status` | Show timer, service, and latest report state |
+| `gc-rg logs` | Show recent `gc-rg.service` journal logs |
+| `gc-rg enable` | Enable/start the timer |
+| `gc-rg disable` | Disable/stop the timer |
+| `gc-rg remove` | Remove package with apt |
+| `gcrg run` | Short alias for the daily flow |
 
 ### What you'll see
 
-Generate output is intentionally path-based so schedulers can log it cleanly:
+Generate output is path-based so schedulers can log it cleanly:
 
 ```text
 reports/daily/2026-06-05-daily-monitoring-report.md
@@ -109,9 +117,28 @@ Real send ends with:
 send_result=sent
 ```
 
+`gc-rg schedule` prints:
+
+```text
+gc-rg schedule
+Timer                    : gc-rg.timer
+Service                  : gc-rg.service
+OnCalendar               : *-*-* 08:00:00
+Persistent               : true
+RandomizedDelaySec       : 5m
+Edit schedule in: /etc/gc-rg/gc-rg.env
+Apply timer with: sudo gc-rg enable
+```
+
 ### Configuration
 
-Email configuration comes from environment variables or matching CLI flags.
+Config lives in `/etc/gc-rg/gc-rg.env` by default. Use:
+
+```bash
+sudo gc-rg config
+sudo gc-rg config smtp
+gcrg config show
+```
 
 | Variable | Required | What it is |
 | --- | :---: | --- |
@@ -120,107 +147,85 @@ Email configuration comes from environment variables or matching CLI flags.
 | `GC_RG_EMAIL_TO` | yes | Comma-separated recipients |
 | `GC_RG_EMAIL_CC` | optional | Comma-separated CC recipients |
 | `GC_RG_SMTP_USERNAME` | yes when auth on | SMTP username |
-| `GC_RG_SMTP_PASSWORD` | yes when auth on | SMTP password or provider app password |
-| `GC_RG_SMTP_HOST` | custom only | SMTP host; provider presets fill this automatically |
+| `GC_RG_SMTP_PASSWORD` | yes when auth on | SMTP/app password |
+| `GC_RG_SMTP_HOST` | custom only | SMTP host |
 | `GC_RG_SMTP_PORT` | optional | SMTP port; default `587` |
-| `GC_RG_SMTP_TLS` | optional | `starttls`, `ssl`, or `none`; default `starttls` |
+| `GC_RG_SMTP_TLS` | optional | `starttls`, `ssl`, or `none` |
 | `GC_RG_SMTP_AUTH` | optional | `on` or `off`; default `on` |
 | `GC_RG_EMAIL_SUBJECT_PREFIX` | optional | Subject prefix; default `[GC-RG]` |
-| `GC_RG_REPORT_DIR` | scheduler | Report directory used by systemd template |
-| `GC_RG_WORKDIR` | scheduler | Work directory used by scripts/templates |
+| `GC_RG_REPORT_DIR` | scheduler | Report directory |
+| `GC_RG_WORKDIR` | scheduler | Work directory |
+| `GC_RG_SCHEDULE_ON_CALENDAR` | scheduler | systemd `OnCalendar` value |
 
 Provider presets:
 
 | Provider | Host | Port | TLS | Notes |
 | --- | --- | ---: | --- | --- |
-| `gmail` | `smtp.gmail.com` | `587` | `starttls` | Use Gmail app password |
-| `yahoo` | `smtp.mail.yahoo.com` | `587` | `starttls` | Use Yahoo app password |
-| `outlook` | `smtp.office365.com` | `587` | `starttls` | Depends on tenant SMTP auth policy |
-| `custom` | operator-defined | operator-defined | `starttls`, `ssl`, or `none` | Any SMTP-compatible provider |
-
-Example:
-
-```bash
-export GC_RG_EMAIL_PROVIDER=gmail
-export GC_RG_EMAIL_FROM=your-email@gmail.com
-export GC_RG_EMAIL_TO=ops@example.com,manager@example.com
-export GC_RG_SMTP_USERNAME=your-email@gmail.com
-export GC_RG_SMTP_PASSWORD=replace-with-app-password
-export GC_RG_EMAIL_SUBJECT_PREFIX='[GC-RG]'
-```
+| `gmail` | `smtp.gmail.com` | `587` | `starttls` | Use app password |
+| `yahoo` | `smtp.mail.yahoo.com` | `587` | `starttls` | Use app password |
+| `outlook` | `smtp.office365.com` | `587` | `starttls` | Depends on tenant policy |
+| `custom` | operator-defined | operator-defined | any | Any SMTP provider |
 
 ### Scheduling
 
-Linux uses systemd templates in `assets/systemd/`.
+Linux scheduling is systemd-first. The timer exists in `assets/systemd/` and is
+installed by the `.deb` package. The service runs the same command operators use
+manually:
 
-Recommended layout:
-
-```text
-/opt/gc-rg/
-├── bin/
-│   ├── gc-rg-generate
-│   └── gc-rg-email
-├── evidence/
-│   ├── grafana-longrange-validation/SUMMARY.json
-│   ├── grafana-prometheus-validation/SUMMARY.json
-│   └── grafana-live-loki-scope-24h.json
-├── reports/daily/
-└── tmp/
+```ini
+ExecStart=/usr/bin/gc-rg run --quiet
 ```
 
-Setup example:
+Default timer:
+
+```ini
+OnCalendar=*-*-* 08:00:00
+Persistent=true
+RandomizedDelaySec=5m
+Unit=gc-rg.service
+```
+
+Manage it through the unified CLI:
 
 ```bash
-sudo useradd --system --home /opt/gc-rg --shell /usr/sbin/nologin gc-rg || true
-sudo mkdir -p /opt/gc-rg/bin /opt/gc-rg/evidence /opt/gc-rg/reports/daily /opt/gc-rg/tmp /etc/gc-rg
-sudo cp bin/gc-rg-generate bin/gc-rg-email /opt/gc-rg/bin/
-sudo cp assets/env/gc-rg.env.example /etc/gc-rg/gc-rg.env
-sudo chmod 600 /etc/gc-rg/gc-rg.env
-sudo chown -R gc-rg:gc-rg /opt/gc-rg
-sudo cp assets/systemd/gc-rg.service assets/systemd/gc-rg.timer /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now gc-rg.timer
+gcrg schedule
+sudo gc-rg enable
+sudo gc-rg disable
+gcrg status
+gcrg logs
 ```
 
-Edit secrets before enabling production sends:
+To change the schedule:
 
 ```bash
 sudoedit /etc/gc-rg/gc-rg.env
-sudo systemctl start gc-rg.service
-sudo journalctl -u gc-rg.service -n 100 --no-pager
+sudo gc-rg enable
+gcrg schedule
 ```
 
-Windows Task Scheduler template lives in `assets/windows/gc-rg-email-daily-task.xml`, with helper script `scripts/run-daily-email.cmd`.
+Set `GC_RG_SCHEDULE_ON_CALENDAR` to a valid systemd calendar expression. Keep
+Linux production on `systemd.timer`, not crontab.
+
+Windows Task Scheduler template remains in
+`assets/windows/gc-rg-email-daily-task.xml`, with helper
+`scripts/run-daily-email.cmd`.
 
 ### How it's wired
 
 ```text
-          ┌──────────────────────────────┐
-          │ evidence/*.json              │
-          │ Prometheus + Loki summaries  │
-          └──────────────┬───────────────┘
-                         │
-                         ▼
-          ┌──────────────────────────────┐
-          │ gc-rg-generate               │
-          │ JSON → Markdown → PDF        │
-          └──────────────┬───────────────┘
-                         │
-                         ▼
-          reports/daily/YYYY-MM-DD-daily-monitoring-report.{md,pdf}
-                         │
-                         ▼
-          ┌──────────────────────────────┐
-          │ gc-rg-email                  │
-          │ resolve → validate → MIME    │
-          │ dry-run or SMTP send         │
-          └──────────────┬───────────────┘
-                         │
-                         ▼
-                  operator inbox
+evidence/*.json
+  ↓
+gc-rg generate
+  ↓
+reports/daily/YYYY-MM-DD-daily-monitoring-report.{md,pdf}
+  ↓
+gc-rg send --send
+  ↓
+operator inbox
 ```
 
-The scheduler runs generation first and email second. If generation fails, systemd stops the unit and the email step does not run.
+For scheduled Linux runs, `gc-rg.timer` starts `gc-rg.service`, and the service
+executes `gc-rg run --quiet`. If generation fails, the send step does not run.
 
 ### Build it yourself
 
@@ -228,53 +233,60 @@ The scheduler runs generation first and email second. If generation fails, syste
 git clone https://github.com/naufalmng/gc-rg
 cd gc-rg
 go test ./...
-go build -o bin/gc-rg-generate ./cmd/generate-daily-report
-go build -o bin/gc-rg-email ./cmd/send-email-report
+bash scripts/build.sh
+bash tests/installer_smoke.sh
+dist/gc-rg help
+dist/gc-rg schedule
 ```
 
 Source layout:
 
 ```text
 gc-rg/
-├── cmd/
-│   ├── generate-daily-report/ # report generation CLI
-│   ├── send-email-report/     # SMTP email CLI
-│   └── send-whatsapp-report/  # WhatsApp sender experiment
-├── internal/
-│   ├── config/                # shared config parsing
-│   ├── email/                 # SMTP config, MIME, delivery
-│   ├── generator/             # evidence parsing + report rendering
-│   ├── report/                # report file resolution + status extraction
-│   └── whatsapp/              # WhatsApp delivery support
-├── assets/
-│   ├── env/                   # env examples
-│   ├── systemd/               # Linux timer/service templates
-│   └── windows/               # Task Scheduler template
-├── scripts/                   # scheduler helper scripts
-├── evidence/                  # local validation evidence inputs
-└── reports/daily/             # generated report outputs
+├── cmd/                      # internal Go CLIs
+├── internal/                 # config, email, generator, report packages
+├── src/tool/                 # unified gc-rg shell runtime modules
+├── assets/systemd/           # Linux timer/service templates
+├── assets/windows/           # Windows Task Scheduler template
+├── scripts/                  # build and helper scripts
+├── evidence/                 # local validation evidence inputs
+└── reports/daily/            # generated report outputs
 ```
 
-### Design choices
+### Release
 
-- **Generate and send are separate commands.** This keeps scheduler failure modes obvious: no valid PDF, no email.
-- **Dry-run is default when `--send` is absent.** Running the email command without a send flag validates only.
-- **Operator-owned SMTP.** `gc-rg` does not hide delivery behind a SaaS API; it uses your configured SMTP provider.
-- **Provider presets are conservative.** Gmail, Yahoo, and Outlook set host/port/TLS defaults, but credentials remain explicit.
-- **Linux-first scheduling.** systemd service/timer templates support headless servers and persist missed runs via `Persistent=true`.
-- **Evidence stays local.** Reports are generated from files, so runs are reproducible and easy to audit.
+Release is tag-driven. GitHub Actions publishes `dist/*` when a `v*.*.*` tag is
+pushed.
+
+Local release flow:
+
+```bash
+go test ./...
+bash scripts/build.sh
+bash tests/installer_smoke.sh
+git add .
+git commit -m "feat: align gc-rg unified CLI and scheduling UX"
+git push origin main
+git tag -a v$(cat VERSION) -m "Release v$(cat VERSION)"
+git push origin v$(cat VERSION)
+```
+
+The release workflow builds Linux assets, Windows assets, verifies the
+installer smoke test, then publishes GitHub release assets.
 
 ### Troubleshooting
 
-**`PDF report not found`** — run `gc-rg-generate --date today` without `--no-pdf`, and confirm `wkhtmltopdf` exists in `PATH`.
+**`PDF report not found`** — run `gcrg generate --date today`, then confirm
+`wkhtmltopdf` exists in `PATH`.
 
-**`GC_RG_SMTP_PASSWORD is required`** — set provider app password in `/etc/gc-rg/gc-rg.env` or pass `--smtp-password`.
+**`GC_RG_SMTP_PASSWORD is required`** — set provider app password in
+`/etc/gc-rg/gc-rg.env`, then verify with `gcrg config show`.
 
-**`GC_RG_SMTP_HOST is required`** — use a known provider or set custom host with `GC_RG_SMTP_HOST`.
+**`GC_RG_SMTP_HOST is required`** — use a known provider or set custom host with
+`GC_RG_SMTP_HOST`.
 
-**`x509: certificate signed by unknown authority`** — install `ca-certificates` on the host.
-
-**Timer active but no email received** — check `journalctl -u gc-rg.service -n 100 --no-pager`, then run `gc-rg-email --date today --dry-run` manually.
+**Timer active but no email received** — run `gcrg logs`, then validate with
+`gcrg send --dry-run`.
 
 ---
 
@@ -290,68 +302,74 @@ gc-rg/
 6. [Scheduling](#scheduling-1)
 7. [Alur kerja](#alur-kerja)
 8. [Build sendiri](#build-sendiri)
-9. [Keputusan desain](#keputusan-desain)
+9. [Release](#release-1)
 10. [Troubleshooting](#troubleshooting-1)
 
 ### Apa ini
 
-`gc-rg` adalah generator report harian berbasis Go untuk evidence validasi Grafana Cloud. Tool ini baca JSON evidence lokal, render report Markdown siap-operasional, ubah report ke PDF, lalu kirim PDF lewat SMTP saat diminta.
+`gc-rg` adalah generator report harian berbasis Go untuk evidence validasi
+Grafana Cloud. Tool ini baca JSON evidence lokal, render report Markdown
+siap-operasional, ubah report ke PDF, lalu kirim PDF lewat SMTP.
 
 Prinsipnya evidence-first:
 
-- **Prometheus long-range summary** jadi bagian availability dan resource health.
-- **Latest validation summary** memastikan check apa saja yang ada di bundle sumber.
-- **Loki 24h scope evidence** jadi ringkasan log dan error.
-- **Markdown report** tetap bisa dibaca manusia dan gampang di-versioning.
-- **PDF report** jadi attachment email untuk handoff harian.
-- **SMTP delivery** tetap milik operator dan bebas provider.
+- Evidence Prometheus long-range jadi availability dan resource health.
+- Evidence latest validation memastikan check apa saja yang tersedia.
+- Evidence Loki 24h scope jadi ringkasan log dan error.
+- Markdown tetap bisa dibaca manusia dan gampang di-versioning.
+- PDF jadi attachment email untuk handoff harian.
+- Delivery SMTP tetap milik operator dan bebas provider.
 
-`gc-rg` tidak scrape Grafana langsung saat kirim email. Generate dulu, validasi file, baru kirim. Pemisahan ini bikin scheduling harian lebih aman di Linux dan Windows.
+`gc-rg` sekarang punya satu command user-facing seperti `gc-hc`: pakai `gc-rg`
+atau alias pendek `gcrg`. Binary Go internal tetap detail implementasi.
 
 ### Instalasi
 
-One-liner installer, model sama seperti `gc-hc`:
+One-liner installer:
 
 ```bash
 curl -fsSL https://github.com/naufalmng/gc-rg/releases/latest/download/gc-rg.sh | sudo bash
+sudo gc-rg onboard
 ```
 
-Installer bikin `.deb` lokal, install binary Linux release ke `/opt/gc-rg/bin`, buat `/etc/gc-rg/gc-rg.env`, install `gc-rg.service` + `gc-rg.timer`, dan removal tetap dilacak apt.
-
-Non-interactive:
+Install non-interactive:
 
 ```bash
 curl -fsSL https://github.com/naufalmng/gc-rg/releases/latest/download/gc-rg.sh | sudo bash -s -- install --yes
+sudo gc-rg onboard
 ```
 
 Standalone:
 
 ```bash
 curl -fsSL https://github.com/naufalmng/gc-rg/releases/latest/download/gc-rg.sh | bash -s -- standalone
-./gc-rg-standalone/bin/gc-rg-generate --date today --no-pdf
+./gc-rg-standalone/gcrg generate --date today
+./gc-rg-standalone/gcrg send --dry-run
 ```
 
-Kalau `wkhtmltopdf` belum ada, generate Markdown saja:
-
-```bash
-./bin/gc-rg-generate --date today --no-pdf
-```
+Installer bikin `.deb` lokal, install binary release ke `/opt/gc-rg/bin`,
+install `/usr/bin/gc-rg`, tambah `/usr/bin/gcrg`, buat
+`/etc/gc-rg/gc-rg.env`, dan install `gc-rg.service` + `gc-rg.timer`.
 
 ### Command
 
 | Command | Fungsi |
 | --- | --- |
-| `gc-rg-generate --date today` | Generate Markdown + PDF dari path evidence default |
-| `gc-rg-generate --date 2026-06-05 --no-pdf` | Generate Markdown saja |
-| `gc-rg-generate --output-dir reports/daily` | Override direktori output report |
-| `gc-rg-generate --long-range-json PATH` | Override path evidence Prometheus long-range |
-| `gc-rg-generate --latest-json PATH` | Override path evidence latest validation |
-| `gc-rg-generate --loki-scope-json PATH` | Override path optional evidence Loki scope |
-| `gc-rg-email --date today --dry-run` | Validasi file report, config SMTP, dan MIME tanpa kirim |
-| `gc-rg-email --date today --send` | Kirim attachment PDF lewat SMTP |
-| `gc-rg-email --report-dir PATH` | Baca report dari direktori custom |
-
-Flag email sama dengan env var: `--email-provider`, `--smtp-host`, `--smtp-port`, `--smtp-tls`, `--email-from`, `--email-to`, `--email-cc`, `--smtp-username`, `--smtp-password`, dan `--email-subject-prefix`.
+| `gc-rg onboard` | Buat config, enable timer, lalu first dry-run |
+| `gc-rg config` | Buat/update config inti |
+| `gc-rg config show` | Tampilkan config aman dengan secret masked |
+| `gc-rg config smtp` | Buat/update config SMTP |
+| `gc-rg generate --date today` | Generate Markdown + PDF |
+| `gc-rg send --dry-run` | Validasi report, config SMTP, MIME saja |
+| `gc-rg send --send` | Kirim PDF attachment lewat SMTP |
+| `gc-rg run --date today` | Generate report, lalu kirim email |
+| `gc-rg schedule` | Tampilkan jadwal systemd timer |
+| `gc-rg status` | Tampilkan timer, service, dan report terbaru |
+| `gc-rg logs` | Tampilkan journal log `gc-rg.service` |
+| `gc-rg enable` | Enable/start timer |
+| `gc-rg disable` | Disable/stop timer |
+| `gc-rg remove` | Remove package lewat apt |
+| `gcrg run` | Alias pendek untuk flow harian |
 
 ### Output yang terlihat
 
@@ -383,9 +401,28 @@ Kirim sungguhan selesai dengan:
 send_result=sent
 ```
 
+`gc-rg schedule` mencetak:
+
+```text
+gc-rg schedule
+Timer                    : gc-rg.timer
+Service                  : gc-rg.service
+OnCalendar               : *-*-* 08:00:00
+Persistent               : true
+RandomizedDelaySec       : 5m
+Edit schedule in: /etc/gc-rg/gc-rg.env
+Apply timer with: sudo gc-rg enable
+```
+
 ### Konfigurasi
 
-Konfigurasi email berasal dari environment variable atau flag CLI yang setara.
+Config default ada di `/etc/gc-rg/gc-rg.env`. Pakai:
+
+```bash
+sudo gc-rg config
+sudo gc-rg config smtp
+gcrg config show
+```
 
 | Variable | Wajib | Fungsi |
 | --- | :---: | --- |
@@ -394,107 +431,85 @@ Konfigurasi email berasal dari environment variable atau flag CLI yang setara.
 | `GC_RG_EMAIL_TO` | ya | Recipient dipisah koma |
 | `GC_RG_EMAIL_CC` | opsional | CC dipisah koma |
 | `GC_RG_SMTP_USERNAME` | ya kalau auth on | Username SMTP |
-| `GC_RG_SMTP_PASSWORD` | ya kalau auth on | Password SMTP atau app password provider |
-| `GC_RG_SMTP_HOST` | custom saja | Host SMTP; preset provider isi otomatis |
+| `GC_RG_SMTP_PASSWORD` | ya kalau auth on | Password/app password SMTP |
+| `GC_RG_SMTP_HOST` | custom saja | Host SMTP |
 | `GC_RG_SMTP_PORT` | opsional | Port SMTP; default `587` |
-| `GC_RG_SMTP_TLS` | opsional | `starttls`, `ssl`, atau `none`; default `starttls` |
+| `GC_RG_SMTP_TLS` | opsional | `starttls`, `ssl`, atau `none` |
 | `GC_RG_SMTP_AUTH` | opsional | `on` atau `off`; default `on` |
 | `GC_RG_EMAIL_SUBJECT_PREFIX` | opsional | Prefix subject; default `[GC-RG]` |
-| `GC_RG_REPORT_DIR` | scheduler | Direktori report yang dipakai template systemd |
-| `GC_RG_WORKDIR` | scheduler | Working directory untuk script/template |
+| `GC_RG_REPORT_DIR` | scheduler | Direktori report |
+| `GC_RG_WORKDIR` | scheduler | Direktori kerja |
+| `GC_RG_SCHEDULE_ON_CALENDAR` | scheduler | Nilai `OnCalendar` systemd |
 
 Preset provider:
 
 | Provider | Host | Port | TLS | Catatan |
 | --- | --- | ---: | --- | --- |
-| `gmail` | `smtp.gmail.com` | `587` | `starttls` | Pakai Gmail app password |
-| `yahoo` | `smtp.mail.yahoo.com` | `587` | `starttls` | Pakai Yahoo app password |
-| `outlook` | `smtp.office365.com` | `587` | `starttls` | Tergantung policy SMTP auth tenant |
-| `custom` | ditentukan operator | ditentukan operator | `starttls`, `ssl`, atau `none` | Provider SMTP apa pun |
-
-Contoh:
-
-```bash
-export GC_RG_EMAIL_PROVIDER=gmail
-export GC_RG_EMAIL_FROM=your-email@gmail.com
-export GC_RG_EMAIL_TO=ops@example.com,manager@example.com
-export GC_RG_SMTP_USERNAME=your-email@gmail.com
-export GC_RG_SMTP_PASSWORD=replace-with-app-password
-export GC_RG_EMAIL_SUBJECT_PREFIX='[GC-RG]'
-```
+| `gmail` | `smtp.gmail.com` | `587` | `starttls` | Pakai app password |
+| `yahoo` | `smtp.mail.yahoo.com` | `587` | `starttls` | Pakai app password |
+| `outlook` | `smtp.office365.com` | `587` | `starttls` | Tergantung policy tenant |
+| `custom` | ditentukan operator | ditentukan operator | bebas | SMTP kompatibel |
 
 ### Scheduling
 
-Linux pakai template systemd di `assets/systemd/`.
+Scheduling Linux pakai systemd. Timer ada di `assets/systemd/` dan ikut
+terinstall oleh package `.deb`. Service menjalankan command yang sama seperti
+manual run:
 
-Layout yang disarankan:
-
-```text
-/opt/gc-rg/
-├── bin/
-│   ├── gc-rg-generate
-│   └── gc-rg-email
-├── evidence/
-│   ├── grafana-longrange-validation/SUMMARY.json
-│   ├── grafana-prometheus-validation/SUMMARY.json
-│   └── grafana-live-loki-scope-24h.json
-├── reports/daily/
-└── tmp/
+```ini
+ExecStart=/usr/bin/gc-rg run --quiet
 ```
 
-Contoh setup:
+Timer default:
+
+```ini
+OnCalendar=*-*-* 08:00:00
+Persistent=true
+RandomizedDelaySec=5m
+Unit=gc-rg.service
+```
+
+Kelola lewat CLI unified:
 
 ```bash
-sudo useradd --system --home /opt/gc-rg --shell /usr/sbin/nologin gc-rg || true
-sudo mkdir -p /opt/gc-rg/bin /opt/gc-rg/evidence /opt/gc-rg/reports/daily /opt/gc-rg/tmp /etc/gc-rg
-sudo cp bin/gc-rg-generate bin/gc-rg-email /opt/gc-rg/bin/
-sudo cp assets/env/gc-rg.env.example /etc/gc-rg/gc-rg.env
-sudo chmod 600 /etc/gc-rg/gc-rg.env
-sudo chown -R gc-rg:gc-rg /opt/gc-rg
-sudo cp assets/systemd/gc-rg.service assets/systemd/gc-rg.timer /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now gc-rg.timer
+gcrg schedule
+sudo gc-rg enable
+sudo gc-rg disable
+gcrg status
+gcrg logs
 ```
 
-Edit secret sebelum aktif produksi:
+Ubah jadwal:
 
 ```bash
 sudoedit /etc/gc-rg/gc-rg.env
-sudo systemctl start gc-rg.service
-sudo journalctl -u gc-rg.service -n 100 --no-pager
+sudo gc-rg enable
+gcrg schedule
 ```
 
-Template Windows Task Scheduler ada di `assets/windows/gc-rg-email-daily-task.xml`, dengan helper `scripts/run-daily-email.cmd`.
+Set `GC_RG_SCHEDULE_ON_CALENDAR` ke ekspresi kalender systemd yang valid. Untuk
+Linux production, tetap pakai `systemd.timer`, bukan crontab.
+
+Template Windows Task Scheduler tetap ada di
+`assets/windows/gc-rg-email-daily-task.xml`, dengan helper
+`scripts/run-daily-email.cmd`.
 
 ### Alur kerja
 
 ```text
-          ┌──────────────────────────────┐
-          │ evidence/*.json              │
-          │ Prometheus + Loki summaries  │
-          └──────────────┬───────────────┘
-                         │
-                         ▼
-          ┌──────────────────────────────┐
-          │ gc-rg-generate               │
-          │ JSON → Markdown → PDF        │
-          └──────────────┬───────────────┘
-                         │
-                         ▼
-          reports/daily/YYYY-MM-DD-daily-monitoring-report.{md,pdf}
-                         │
-                         ▼
-          ┌──────────────────────────────┐
-          │ gc-rg-email                  │
-          │ resolve → validate → MIME    │
-          │ dry-run or SMTP send         │
-          └──────────────┬───────────────┘
-                         │
-                         ▼
-                  inbox operator
+evidence/*.json
+  ↓
+gc-rg generate
+  ↓
+reports/daily/YYYY-MM-DD-daily-monitoring-report.{md,pdf}
+  ↓
+gc-rg send --send
+  ↓
+inbox operator
 ```
 
-Scheduler menjalankan generate dulu lalu email. Kalau generate gagal, systemd stop unit dan step email tidak jalan.
+Untuk scheduled run Linux, `gc-rg.timer` start `gc-rg.service`, lalu service
+menjalankan `gc-rg run --quiet`. Kalau generate gagal, send tidak jalan.
 
 ### Build sendiri
 
@@ -502,50 +517,57 @@ Scheduler menjalankan generate dulu lalu email. Kalau generate gagal, systemd st
 git clone https://github.com/naufalmng/gc-rg
 cd gc-rg
 go test ./...
-go build -o bin/gc-rg-generate ./cmd/generate-daily-report
-go build -o bin/gc-rg-email ./cmd/send-email-report
+bash scripts/build.sh
+bash tests/installer_smoke.sh
+dist/gc-rg help
+dist/gc-rg schedule
 ```
 
 Struktur source:
 
 ```text
 gc-rg/
-├── cmd/
-│   ├── generate-daily-report/ # CLI generate report
-│   ├── send-email-report/     # CLI email SMTP
-│   └── send-whatsapp-report/  # eksperimen sender WhatsApp
-├── internal/
-│   ├── config/                # parsing config shared
-│   ├── email/                 # config SMTP, MIME, delivery
-│   ├── generator/             # parsing evidence + render report
-│   ├── report/                # resolve file report + status extraction
-│   └── whatsapp/              # support delivery WhatsApp
-├── assets/
-│   ├── env/                   # contoh env
-│   ├── systemd/               # template timer/service Linux
-│   └── windows/               # template Task Scheduler
-├── scripts/                   # helper script scheduler
-├── evidence/                  # input evidence validasi lokal
-└── reports/daily/             # output report generated
+├── cmd/                      # internal Go CLI
+├── internal/                 # config, email, generator, report packages
+├── src/tool/                 # modul runtime shell gc-rg unified
+├── assets/systemd/           # template timer/service Linux
+├── assets/windows/           # template Task Scheduler Windows
+├── scripts/                  # script build/helper
+├── evidence/                 # input evidence validasi lokal
+└── reports/daily/            # output report generated
 ```
 
-### Keputusan desain
+### Release
 
-- **Generate dan send dipisah.** Failure mode scheduler jelas: PDF tidak valid, email tidak jalan.
-- **Dry-run default saat `--send` tidak ada.** Command email tanpa flag send hanya validasi.
-- **SMTP milik operator.** `gc-rg` tidak sembunyikan delivery di balik API SaaS; dia pakai provider SMTP yang kamu set.
-- **Preset provider konservatif.** Gmail, Yahoo, dan Outlook isi default host/port/TLS, tapi credential tetap eksplisit.
-- **Scheduling Linux-first.** Template systemd service/timer support server headless dan missed run dengan `Persistent=true`.
-- **Evidence tetap lokal.** Report dihasilkan dari file, jadi run bisa diaudit dan direproduksi.
+Release berbasis tag. GitHub Actions publish `dist/*` saat tag `v*.*.*`
+dipush.
+
+Flow release lokal:
+
+```bash
+go test ./...
+bash scripts/build.sh
+bash tests/installer_smoke.sh
+git add .
+git commit -m "feat: align gc-rg unified CLI and scheduling UX"
+git push origin main
+git tag -a v$(cat VERSION) -m "Release v$(cat VERSION)"
+git push origin v$(cat VERSION)
+```
+
+Workflow release build asset Linux, asset Windows, verify installer smoke test,
+lalu publish GitHub release assets.
 
 ### Troubleshooting
 
-**`PDF report not found`** — jalankan `gc-rg-generate --date today` tanpa `--no-pdf`, dan pastikan `wkhtmltopdf` ada di `PATH`.
+**`PDF report not found`** — jalankan `gcrg generate --date today`, lalu
+pastikan `wkhtmltopdf` ada di `PATH`.
 
-**`GC_RG_SMTP_PASSWORD is required`** — set app password provider di `/etc/gc-rg/gc-rg.env` atau lewat `--smtp-password`.
+**`GC_RG_SMTP_PASSWORD is required`** — set app password provider di
+`/etc/gc-rg/gc-rg.env`, lalu cek dengan `gcrg config show`.
 
-**`GC_RG_SMTP_HOST is required`** — pakai provider dikenal atau set custom host dengan `GC_RG_SMTP_HOST`.
+**`GC_RG_SMTP_HOST is required`** — pakai provider dikenal atau set custom host
+lewat `GC_RG_SMTP_HOST`.
 
-**`x509: certificate signed by unknown authority`** — install `ca-certificates` di host.
-
-**Timer aktif tapi email tidak masuk** — cek `journalctl -u gc-rg.service -n 100 --no-pager`, lalu jalankan `gc-rg-email --date today --dry-run` manual.
+**Timer aktif tapi email tidak masuk** — jalankan `gcrg logs`, lalu validasi
+manual dengan `gcrg send --dry-run`.

@@ -3,12 +3,29 @@ set -euo pipefail
 
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." >/dev/null && pwd -P)"
 DIST="${ROOT}/dist"
+SRC_TOOL="${ROOT}/src/tool"
 VERSION="$(tr -d '[:space:]' < "${ROOT}/VERSION")"
 MAINTAINER="${PACKAGE_MAINTAINER:-Muhammad Naufal Hanif <naufalmng@gmail.com>}"
 HOMEPAGE="${PACKAGE_HOMEPAGE:-https://github.com/naufalmng/gc-rg}"
 
 step() { printf '==> %s\n' "$*"; }
 done_() { printf ' ok %s\n' "$*"; }
+
+concat_modules() {
+  local dir="${1:?missing dir}"
+  local first=1
+  local file=""
+  for file in "${dir}"/*.sh; do
+    [[ -f "$file" ]] || continue
+    if (( first == 1 )); then
+      cat "$file"
+      first=0
+    else
+      printf '\n# ===== %s =====\n' "$(basename "$file")"
+      awk 'NR==1 && /^#!/ {next} {print}' "$file"
+    fi
+  done
+}
 
 write_installer() {
   local target="${1:?missing target}"
@@ -26,6 +43,8 @@ CONFIG_DIR="/etc/gc-rg"
 APP_DIR="/opt/gc-rg"
 MAIN_GENERATE="/opt/gc-rg/bin/gc-rg-generate"
 MAIN_EMAIL="/opt/gc-rg/bin/gc-rg-email"
+MAIN_TOOL="/usr/bin/gc-rg"
+SHORT_TOOL="/usr/bin/gcrg"
 ACTION=""
 YES="false"
 FORCE="false"
@@ -73,11 +92,17 @@ ${C_BOLD}Pipe examples:${C_RESET}
   curl -fsSL ${PACKAGE_HOMEPAGE}/releases/latest/download/gc-rg.sh | bash -s -- standalone
 
 ${C_BOLD}After install:${C_RESET}
-  sudoedit /etc/gc-rg/gc-rg.env
-  gc-rg-generate --date today
-  gc-rg-email --date today --dry-run
-  sudo systemctl enable --now gc-rg.timer
+  sudo gc-rg onboard
+  gcrg generate
+  gcrg send --dry-run
+  gc-rg run
+  gcrg status
   sudo apt-get remove gc-rg
+
+${C_BOLD}Unified commands:${C_RESET}
+  gc-rg generate
+  gc-rg send
+  gc-rg run
 EOF
 }
 
@@ -167,8 +192,7 @@ After=network-online.target
 Type=oneshot
 WorkingDirectory=/opt/gc-rg
 EnvironmentFile=/etc/gc-rg/gc-rg.env
-ExecStart=/opt/gc-rg/bin/gc-rg-generate --date today
-ExecStart=/opt/gc-rg/bin/gc-rg-email --date today --report-dir ${GC_RG_REPORT_DIR} --send
+ExecStart=/usr/bin/gc-rg run --quiet
 User=gc-rg
 Group=gc-rg
 NoNewPrivileges=true
@@ -235,11 +259,13 @@ build_deb() {
   debian_dir="${pkg_dir}/DEBIAN"
   deb_path="${TMP_BUILD_DIR}/${PACKAGE_NAME}_${PACKAGE_VERSION}_${PACKAGE_ARCH}.deb"
 
-  install -d -m 0755 "$debian_dir" "${pkg_dir}/opt/gc-rg/bin" "${pkg_dir}/usr/share/gc-rg" "${pkg_dir}${SYSTEMD_DIR}"
+  install -d -m 0755 "$debian_dir" "${pkg_dir}/opt/gc-rg/bin" "${pkg_dir}/usr/bin" "${pkg_dir}/usr/share/gc-rg" "${pkg_dir}${SYSTEMD_DIR}"
   install -d -m 0750 "${pkg_dir}/etc/gc-rg" "${pkg_dir}/opt/gc-rg/evidence" "${pkg_dir}/opt/gc-rg/reports/daily" "${pkg_dir}/opt/gc-rg/tmp"
 
   download_asset "gc-rg-generate-linux-amd64" "${pkg_dir}${MAIN_GENERATE}"
   download_asset "gc-rg-email-linux-amd64" "${pkg_dir}${MAIN_EMAIL}"
+  download_asset "gc-rg" "${pkg_dir}${MAIN_TOOL}"
+  ln -s gc-rg "${pkg_dir}${SHORT_TOOL}"
   write_config_example "${pkg_dir}/usr/share/gc-rg/gc-rg.env.example"
   write_service_file "${pkg_dir}${SYSTEMD_DIR}/gc-rg.service"
   write_timer_file "${pkg_dir}${SYSTEMD_DIR}/gc-rg.timer"
@@ -280,15 +306,14 @@ install_package() {
   ok "gc-rg installed successfully"
   cat <<EOF
 
-  Commands:
-    gc-rg-generate --date today
-    gc-rg-email --date today --dry-run
+  Main command:
+    gc-rg help
 
-  Configure:
-    sudoedit /etc/gc-rg/gc-rg.env
+  Short command:
+    gcrg help
 
-  Schedule:
-    sudo systemctl enable --now gc-rg.timer
+  Next step:
+    sudo gc-rg onboard
 
   Remove:
     sudo apt-get remove gc-rg
@@ -312,6 +337,8 @@ standalone() {
   mkdir -p "$dir/bin" "$dir/reports/daily" "$dir/evidence"
   download_asset "gc-rg-generate-linux-amd64" "$dir/bin/gc-rg-generate"
   download_asset "gc-rg-email-linux-amd64" "$dir/bin/gc-rg-email"
+  download_asset "gc-rg" "$dir/gc-rg"
+  ln -sf gc-rg "$dir/gcrg"
   write_config_example "$dir/gc-rg.env"
   ok "Standalone gc-rg created successfully: $dir"
 }
@@ -343,6 +370,11 @@ main() {
   GOOS=linux GOARCH=amd64 go build -o "${DIST}/gc-rg-generate-linux-amd64" "${ROOT}/cmd/generate-daily-report"
   GOOS=linux GOARCH=amd64 go build -o "${DIST}/gc-rg-email-linux-amd64" "${ROOT}/cmd/send-email-report"
 
+  step "assembling unified runtime"
+  concat_modules "$SRC_TOOL" > "${DIST}/gc-rg"
+  sed -i "s|__PACKAGE_VERSION__|${VERSION}|g" "${DIST}/gc-rg"
+  chmod 0755 "${DIST}/gc-rg"
+
   step "building installer"
   write_installer "${DIST}/gc-rg.sh"
   sed -i "s|__PACKAGE_VERSION__|${VERSION}|g" "${DIST}/gc-rg.sh"
@@ -350,10 +382,11 @@ main() {
   sed -i "s|__PACKAGE_HOMEPAGE__|${HOMEPAGE}|g" "${DIST}/gc-rg.sh"
   chmod 0755 "${DIST}/gc-rg.sh"
 
-  step "syntax-checking installer"
+  step "syntax-checking artifacts"
   bash -n "${DIST}/gc-rg.sh"
+  bash -n "${DIST}/gc-rg"
 
-  done_ "artifacts: dist/gc-rg.sh dist/gc-rg-generate dist/gc-rg-email"
+  done_ "artifacts: dist/gc-rg.sh dist/gc-rg dist/gc-rg-generate dist/gc-rg-email"
 }
 
 main "$@"

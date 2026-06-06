@@ -16,8 +16,11 @@ help_output="$(bash "$INSTALLER" help)"
 [[ "$help_output" == *"gc-rg installer"* ]] || fail "help misses installer title"
 [[ "$help_output" == *"sudo bash"*"install"* ]] || fail "help misses install usage"
 [[ "$help_output" == *"standalone"* ]] || fail "help misses standalone usage"
-[[ "$help_output" == *"gc-rg-generate"* ]] || fail "help misses generate command"
-[[ "$help_output" == *"gc-rg-email"* ]] || fail "help misses email command"
+[[ "$help_output" == *"sudo gc-rg onboard"* ]] || fail "help misses onboard next step"
+[[ "$help_output" == *"gcrg"* ]] || fail "help misses short command alias"
+[[ "$help_output" == *"gc-rg generate"* ]] || fail "help misses unified generate command"
+[[ "$help_output" == *"gc-rg send"* ]] || fail "help misses unified send command"
+[[ "$help_output" == *"gc-rg run"* ]] || fail "help misses unified run command"
 
 if ! grep -q 'PACKAGE_NAME="gc-rg"' "$INSTALLER"; then
   fail "installer package name mismatch"
@@ -33,6 +36,36 @@ if ! grep -q 'gc-rg-generate-linux-amd64' "$INSTALLER"; then
 fi
 if ! grep -q 'gc-rg-email-linux-amd64' "$INSTALLER"; then
   fail "installer does not fetch release email binary"
+fi
+if ! grep -q '/usr/bin/gc-rg' "$INSTALLER"; then
+  fail "installer does not install unified command"
+fi
+if ! grep -q '/usr/bin/gcrg' "$INSTALLER"; then
+  fail "installer does not install short alias"
+fi
+if ! grep -q 'ExecStart=/usr/bin/gc-rg run --quiet' "$INSTALLER"; then
+  fail "systemd service does not use unified run command"
+fi
+
+[[ -x "${ROOT}/dist/gc-rg" ]] || fail "unified runtime is not executable"
+bash -n "${ROOT}/dist/gc-rg" || fail "unified runtime syntax check failed"
+runtime_help="$("${ROOT}/dist/gc-rg" help)"
+[[ "$runtime_help" == *"gc-rg onboard"* ]] || fail "runtime help misses onboard"
+[[ "$runtime_help" == *"gcrg"* ]] || fail "runtime help misses gcrg"
+[[ "$runtime_help" == *"gc-rg run"* ]] || fail "runtime help misses run"
+[[ "$runtime_help" == *"gc-rg schedule"* ]] || fail "runtime help misses schedule"
+
+if ! grep -q 'OnCalendar=' "${ROOT}/assets/systemd/gc-rg.timer"; then
+  fail "timer misses OnCalendar"
+fi
+if ! grep -q 'gc-rg schedule' "${ROOT}/documentation.md"; then
+  fail "documentation misses schedule command"
+fi
+if ! grep -q 'gc-rg run' "${ROOT}/documentation.md"; then
+  fail "documentation misses unified run command"
+fi
+if ! grep -q 'GC_RG_SCHEDULE_ON_CALENDAR' "${ROOT}/src/tool/05-config.sh"; then
+  fail "config misses schedule environment support"
 fi
 
 printf 'installer_smoke=pass\n'
