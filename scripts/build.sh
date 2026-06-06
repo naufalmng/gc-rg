@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." >/dev/null && pwd -P)"
 DIST="${ROOT}/dist"
 SRC_TOOL="${ROOT}/src/tool"
+SAMPLES="${ROOT}/evidence"
 VERSION="$(tr -d '[:space:]' < "${ROOT}/VERSION")"
 MAINTAINER="${PACKAGE_MAINTAINER:-Muhammad Naufal Hanif <naufalmng@gmail.com>}"
 HOMEPAGE="${PACKAGE_HOMEPAGE:-https://github.com/naufalmng/gc-rg}"
@@ -25,6 +26,40 @@ concat_modules() {
       awk 'NR==1 && /^#!/ {next} {print}' "$file"
     fi
   done
+}
+
+embed_file_base64() {
+  local source="${1:?missing source}"
+  local target="${2:?missing target}"
+  local relative="${3:?missing relative path}"
+  local guard=""
+  guard="$(printf '%s' "$relative" | tr -c 'A-Za-z0-9' '_')"
+  printf "  install -d -m 0755 \"%s\"\n" "$(dirname -- "$target")"
+  printf "  if [[ ! -e \"%s\" || \"\${FORCE}\" == \"true\" ]]; then\n" "$target"
+  printf "    base64 -d > \"%s\" <<'EOF_%s'\n" "$target" "$guard"
+  base64 "$source"
+  printf "\nEOF_%s\n" "$guard"
+  printf "    chmod 0644 \"%s\"\n" "$target"
+  printf "  fi\n"
+}
+
+write_evidence_scaffold_function() {
+  local target="${1:?missing target}"
+  cat >> "$target" <<'SCAFFOLD_HEAD'
+
+write_evidence_scaffold() {
+  local evidence_root="${1:-/opt/gc-rg/evidence}"
+SCAFFOLD_HEAD
+  embed_file_base64 "${SAMPLES}/grafana-longrange-validation/SUMMARY.json" '${evidence_root}/grafana-longrange-validation/SUMMARY.json' "grafana-longrange-validation/SUMMARY.json" >> "$target"
+  embed_file_base64 "${SAMPLES}/grafana-prometheus-validation/SUMMARY.json" '${evidence_root}/grafana-prometheus-validation/SUMMARY.json' "grafana-prometheus-validation/SUMMARY.json" >> "$target"
+  embed_file_base64 "${SAMPLES}/grafana-live-loki-scope-24h.json" '${evidence_root}/grafana-live-loki-scope-24h.json' "grafana-live-loki-scope-24h.json" >> "$target"
+  cat >> "$target" <<'SCAFFOLD_TAIL'
+  if getent passwd gc-rg >/dev/null 2>&1; then
+    chown -R gc-rg:gc-rg "$evidence_root" >/dev/null 2>&1 || true
+  fi
+  ok "evidence scaffold ready: $evidence_root"
+}
+SCAFFOLD_TAIL
 }
 
 write_installer() {
@@ -192,6 +227,7 @@ GC_RG_SCHEDULE_ON_CALENDAR="*-*-* 08:00:00"
 EOF
 }
 
+
 write_service_file() {
   local target="${1:?missing target}"
   cat > "$target" <<'EOF'
@@ -311,6 +347,7 @@ install_package() {
   deb_path="${TMP_BUILD_DIR}/${PACKAGE_NAME}_${PACKAGE_VERSION}_${PACKAGE_ARCH}.deb"
   build_deb "$deb_path"
   apt-get install -y "$deb_path" || die "apt-get install failed"
+  "$MAIN_TOOL" evidence scaffold || die "create sample evidence failed"
   if [[ "$KEEP_DEB" == "true" ]]; then
     keep_path="${PWD}/${PACKAGE_NAME}_${PACKAGE_VERSION}_${PACKAGE_ARCH}.deb"
     cp -f "$deb_path" "$keep_path"
@@ -385,7 +422,12 @@ main() {
   GOOS=linux GOARCH=amd64 go build -o "${DIST}/gc-rg-email-linux-amd64" "${ROOT}/cmd/send-email-report"
 
   step "assembling unified runtime"
-  concat_modules "$SRC_TOOL" > "${DIST}/gc-rg"
+  runtime_tmp="$(mktemp)"
+  concat_modules "$SRC_TOOL" > "$runtime_tmp"
+  sed '/^main "\$@"$/d' "$runtime_tmp" > "${DIST}/gc-rg"
+  write_evidence_scaffold_function "${DIST}/gc-rg"
+  printf '\nmain "$@"\n' >> "${DIST}/gc-rg"
+  rm -f "$runtime_tmp"
   sed -i "s|__PACKAGE_VERSION__|${VERSION}|g" "${DIST}/gc-rg"
   chmod 0755 "${DIST}/gc-rg"
 

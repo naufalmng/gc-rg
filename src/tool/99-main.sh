@@ -14,6 +14,7 @@ main() {
     config-smtp) config_smtp ;;
     generate) run_generate ;;
     send) run_send ;;
+    evidence-scaffold) source_config; write_evidence_scaffold "${GC_RG_EVIDENCE_DIR:-$EVIDENCE_DIR}" ;;
     run) run_all ;;
     status) show_status ;;
     logs) show_logs ;;

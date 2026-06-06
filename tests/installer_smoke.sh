@@ -66,6 +66,7 @@ if ! grep -q 'GC_RG_ASSET_BASE_URL' "$INSTALLER"; then
   fail "installer cannot override asset source for release verification"
 fi
 
+[[ "$(head -n 1 "${ROOT}/dist/gc-rg")" == '#!/usr/bin/env bash' ]] || fail "unified runtime misses shebang"
 [[ -x "${ROOT}/dist/gc-rg" ]] || fail "unified runtime is not executable"
 bash -n "${ROOT}/dist/gc-rg" || fail "unified runtime syntax check failed"
 runtime_help="$("${ROOT}/dist/gc-rg" help)"
@@ -99,7 +100,11 @@ fi
 if ! grep -q 'GC_RG_EVIDENCE_DIR=/opt/gc-rg/evidence' "$INSTALLER"; then
   fail "installer config misses consistent evidence dir"
 fi
+if ! grep -q '"$MAIN_TOOL" evidence scaffold' "$INSTALLER"; then
+  fail "installer must auto-create evidence scaffold after install"
+fi
 [[ "$runtime_help" == *"gc-rg schedule"* ]] || fail "runtime help misses schedule"
+[[ "$runtime_help" == *"gc-rg evidence scaffold"* ]] || fail "runtime help misses evidence scaffold"
 
 if ! grep -q 'OnCalendar=' "${ROOT}/assets/systemd/gc-rg.timer"; then
   fail "timer misses OnCalendar"

@@ -12,6 +12,7 @@ Usage:
 
   gc-rg generate             generate report once
   gc-rg send                 send existing report
+  gc-rg evidence scaffold    create sample evidence JSON templates
   gc-rg run                  generate report then send it
   gc-rg status               show timer and latest report state
   gc-rg logs                 show recent service logs
@@ -80,6 +81,11 @@ parse_args() {
       show|smtp)
         [[ "$ACTION" == "config" ]] || die "$arg subcommand is only valid after config" || return 1
         ACTION="config-$arg"
+        shift
+        ;;
+      scaffold|init|template|templates)
+        [[ "$ACTION" == "evidence" || "$ACTION" == "evidence-scaffold" ]] || die "$arg subcommand is only valid after evidence" || return 1
+        ACTION="evidence-scaffold"
         shift
         ;;
       -d|--date)

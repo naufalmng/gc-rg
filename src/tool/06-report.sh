@@ -40,7 +40,9 @@ Onboard plan:
 
   3. Configure core paths and SMTP interactively unless --yes is passed.
 
-Fresh install does not generate or send yet because no evidence exists by default.
+Fresh install creates bundled sample evidence automatically, so first generate can run.
+Production reports need real validated evidence replacing those sample files.
+
 Expected evidence layout:
   ${EVIDENCE_DIR}/grafana-longrange-validation/SUMMARY.json
   ${EVIDENCE_DIR}/grafana-prometheus-validation/SUMMARY.json
@@ -59,19 +61,19 @@ EOF
   cat <<EOF
 
 Next steps:
-  1. Put validated Grafana evidence under:
+  1. Replace sample evidence with validated Grafana evidence under:
      ${EVIDENCE_DIR}
 
-  2. Generate report after evidence exists:
+  2. Generate report:
      sudo gc-rg generate
 
   3. Validate email config without sending:
      sudo gc-rg send --dry-run
 
-  4. Send manually when ready:
+  4. Send for real:
      sudo gc-rg send --send
 
-Timer is enabled, but first scheduled run also requires evidence and SMTP config.
+Timer is enabled. First scheduled run uses sample evidence until real evidence replaces it.
 EOF
   show_status
 }
