@@ -287,7 +287,8 @@ Version: ${PACKAGE_VERSION}
 Section: admin
 Priority: optional
 Architecture: ${PACKAGE_ARCH}
-Depends: ca-certificates, systemd, curl, wkhtmltopdf
+Depends: ca-certificates, systemd, curl
+Recommends: wkhtmltopdf
 Maintainer: ${PACKAGE_MAINTAINER}
 Homepage: ${PACKAGE_HOMEPAGE}
 Description: Grafana Cloud daily report generator with SMTP delivery

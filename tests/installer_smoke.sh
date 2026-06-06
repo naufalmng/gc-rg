@@ -52,6 +52,15 @@ fi
 if ! grep -q 'build_deb "$deb_path"' "$INSTALLER"; then
   fail "installer does not pass explicit deb path to build_deb"
 fi
+if ! grep -q '^Depends: ca-certificates, systemd, curl$' "$INSTALLER"; then
+  fail "package has unexpected hard dependencies"
+fi
+if grep -q '^Depends: .*wkhtmltopdf' "$INSTALLER"; then
+  fail "package must not hard-depend on wkhtmltopdf"
+fi
+if ! grep -q '^Recommends: wkhtmltopdf$' "$INSTALLER"; then
+  fail "package should recommend wkhtmltopdf for PDF support"
+fi
 if ! grep -q 'GC_RG_ASSET_BASE_URL' "$INSTALLER"; then
   fail "installer cannot override asset source for release verification"
 fi

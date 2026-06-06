@@ -277,7 +277,8 @@ installer smoke test, then publishes GitHub release assets.
 ### Troubleshooting
 
 **`PDF report not found`** — run `gcrg generate --date today`, then confirm
-`wkhtmltopdf` exists in `PATH`.
+`wkhtmltopdf` exists in `PATH`. If your distro cannot install `wkhtmltopdf`, use
+`gcrg generate --no-pdf` for Markdown-only output.
 
 **`GC_RG_SMTP_PASSWORD is required`** — set provider app password in
 `/etc/gc-rg/gc-rg.env`, then verify with `gcrg config show`.
@@ -561,7 +562,8 @@ lalu publish GitHub release assets.
 ### Troubleshooting
 
 **`PDF report not found`** — jalankan `gcrg generate --date today`, lalu
-pastikan `wkhtmltopdf` ada di `PATH`.
+pastikan `wkhtmltopdf` ada di `PATH`. Kalau distro tidak menyediakan
+`wkhtmltopdf`, pakai `gcrg generate --no-pdf` untuk output Markdown saja.
 
 **`GC_RG_SMTP_PASSWORD is required`** — set app password provider di
 `/etc/gc-rg/gc-rg.env`, lalu cek dengan `gcrg config show`.

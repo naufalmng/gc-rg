@@ -47,8 +47,9 @@ sudo gc-rg onboard
 
 The installer builds a real `.deb`, installs release binaries, installs
 `/usr/bin/gc-rg`, adds `/usr/bin/gcrg`, creates `/etc/gc-rg/gc-rg.env`, and
-places daily systemd units on disk. PDF generation requires `wkhtmltopdf`; the
-package declares it as an apt dependency.
+places daily systemd units on disk. PDF generation uses `wkhtmltopdf` when it is
+available; if your distro does not ship it, install still works and you can run
+Markdown-only reports with `gcrg generate --no-pdf`.
 
 ### Quick start
 
@@ -103,8 +104,9 @@ sudo gc-rg onboard
 
 Installer bikin `.deb`, install binary release, install `/usr/bin/gc-rg`, tambah
 alias `/usr/bin/gcrg`, buat `/etc/gc-rg/gc-rg.env`, dan taruh unit systemd
-harian di disk. Generate PDF butuh `wkhtmltopdf`; package mendeklarasikannya
-sebagai dependency apt.
+harian di disk. Generate PDF memakai `wkhtmltopdf` kalau tersedia; kalau distro
+lo tidak menyediakan package itu, install tetap jalan dan report Markdown bisa
+dibuat dengan `gcrg generate --no-pdf`.
 
 ### Quick start
 
