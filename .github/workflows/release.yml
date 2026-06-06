@@ -1,0 +1,42 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build release assets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.0'
+          cache: true
+
+      - name: Test
+        run: go test ./...
+
+      - name: Build Linux assets
+        run: |
+          mkdir -p dist
+          GOOS=linux GOARCH=amd64 go build -o dist/gc-rg-generate-linux-amd64 ./cmd/generate-daily-report
+          GOOS=linux GOARCH=amd64 go build -o dist/gc-rg-email-linux-amd64 ./cmd/send-email-report
+
+      - name: Build Windows assets
+        run: |
+          GOOS=windows GOARCH=amd64 go build -o dist/gc-rg-generate-windows-amd64.exe ./cmd/generate-daily-report
+          GOOS=windows GOARCH=amd64 go build -o dist/gc-rg-email-windows-amd64.exe ./cmd/send-email-report
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*

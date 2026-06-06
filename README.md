@@ -1,123 +1,89 @@
-# GC-RG — Grafana Cloud Report Generator
+<div align="center">
 
-`gc-rg` turns Grafana Cloud validation evidence into daily monitoring reports and sends the generated PDF through provider-agnostic SMTP.
+     ▄████   ▄████        ██████   ▄████
+    ██       ██           ██   ██ ██
+    ██  ▄▄   ██           ██████  ██  ▄▄
+    ██  ██   ██           ██   ██ ██  ██
+     ▀████    ▀████  ▄    ██   ██  ▀████
 
-It pairs with `gc-hc`:
+**Grafana Cloud Report Generator** — Go CLI for turning Grafana Cloud validation evidence into daily monitoring reports and sending the PDF by SMTP.
 
-- `gc-hc` = Grafana Cloud Health Checker
-- `gc-rg` = Grafana Cloud Report Generator
+[![CI](https://github.com/naufalmng/gc-rg/actions/workflows/ci.yml/badge.svg)](https://github.com/naufalmng/gc-rg/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/naufalmng/gc-rg?display_name=tag&sort=semver)](https://github.com/naufalmng/gc-rg/releases)
+[![License](https://img.shields.io/github/license/naufalmng/gc-rg)](LICENSE)
+[![Go](https://img.shields.io/badge/go-1.25-00ADD8.svg)](https://go.dev/)
+[![Platform](https://img.shields.io/badge/platform-linux%20%7C%20windows-d70a53)](#install)
 
-## Commands
+</div>
 
-Generate daily report:
+---
 
-```bash
-go run ./cmd/generate-daily-report --date 2026-06-05
-```
+## English
 
-Generate Markdown only:
+`gc-rg` takes validated Grafana Cloud evidence, renders a daily monitoring report in Markdown + PDF, then sends the PDF through operator-owned SMTP. It is built as the reporting pair for [`gc-hc`](https://github.com/naufalmng/gc-hc): `gc-hc` checks connectivity, `gc-rg` packages the validated evidence into an operator-friendly daily report.
 
-```bash
-go run ./cmd/generate-daily-report --date 2026-06-05 --no-pdf
-```
-
-Validate email config without sending:
-
-```bash
-go run ./cmd/send-email-report --date 2026-06-05 --dry-run
-```
-
-Send email:
+### Install
 
 ```bash
-go run ./cmd/send-email-report --date 2026-06-05 --send
-```
-
-Build binaries on Windows:
-
-```bash
-go build -o bin/gc-rg-generate.exe ./cmd/generate-daily-report
-go build -o bin/gc-rg-email.exe ./cmd/send-email-report
-```
-
-Build binaries on Linux:
-
-```bash
+git clone https://github.com/naufalmng/gc-rg
+cd gc-rg
+go test ./...
 go build -o bin/gc-rg-generate ./cmd/generate-daily-report
 go build -o bin/gc-rg-email ./cmd/send-email-report
 ```
 
-## SMTP config
+PDF generation requires `wkhtmltopdf` in `PATH`.
 
-SMTP is supplied by the operator. `gc-rg` does not provide SMTP infrastructure.
-
-Supported provider presets:
-
-| Provider | Host | Port | TLS | Notes |
-|---|---:|---:|---|---|
-| `gmail` | `smtp.gmail.com` | `587` | `starttls` | Use Gmail app password. |
-| `yahoo` | `smtp.mail.yahoo.com` | `587` | `starttls` | Use Yahoo app password. |
-| `outlook` | `smtp.office365.com` | `587` | `starttls` | Depends on tenant SMTP auth policy. |
-| `custom` | operator-defined | operator-defined | `starttls`, `ssl`, or `none` | Any SMTP-compatible provider. |
-
-Environment variables:
+### Quick start
 
 ```bash
-GC_RG_EMAIL_PROVIDER=gmail
-GC_RG_EMAIL_FROM=your-email@gmail.com
-GC_RG_EMAIL_TO=ops@example.com,manager@example.com
-GC_RG_EMAIL_CC=
-GC_RG_SMTP_USERNAME=your-email@gmail.com
-GC_RG_SMTP_PASSWORD=replace-with-app-password
-GC_RG_EMAIL_SUBJECT_PREFIX='[GC-RG]'
+./bin/gc-rg-generate --date today        # generate Markdown + PDF
+./bin/gc-rg-generate --date today --no-pdf
+./bin/gc-rg-email --date today --dry-run # validate report + SMTP + MIME only
+./bin/gc-rg-email --date today --send    # send PDF attachment
 ```
 
-Custom SMTP also needs:
+For daily Linux automation, use the systemd templates in `assets/systemd/` and the environment example in `assets/env/gc-rg.env.example`.
+
+For full usage, configuration reference, architecture, scheduler setup, and design notes, see **[documentation.md](documentation.md)**.
+
+---
+
+## Bahasa Indonesia
+
+`gc-rg` ambil evidence Grafana Cloud yang sudah tervalidasi, render daily monitoring report dalam Markdown + PDF, lalu kirim PDF lewat SMTP milik operator. Tool ini pasangan reporting untuk [`gc-hc`](https://github.com/naufalmng/gc-hc): `gc-hc` ngecek konektivitas, `gc-rg` bungkus evidence tervalidasi jadi report harian yang enak dibaca operator.
+
+### Instalasi
 
 ```bash
-GC_RG_SMTP_HOST=mail.example.com
-GC_RG_SMTP_PORT=587
-GC_RG_SMTP_TLS=starttls
-GC_RG_SMTP_AUTH=on
+git clone https://github.com/naufalmng/gc-rg
+cd gc-rg
+go test ./...
+go build -o bin/gc-rg-generate ./cmd/generate-daily-report
+go build -o bin/gc-rg-email ./cmd/send-email-report
 ```
 
-## Scheduling
+Generate PDF butuh `wkhtmltopdf` ada di `PATH`.
 
-Linux uses systemd timer templates in:
+### Quick start
 
-```text
-deploy/systemd/gc-rg.service
-deploy/systemd/gc-rg.timer
-deploy/env/gc-rg.env.example
-scripts/run-daily-email.sh
+```bash
+./bin/gc-rg-generate --date today        # generate Markdown + PDF
+./bin/gc-rg-generate --date today --no-pdf
+./bin/gc-rg-email --date today --dry-run # validasi report + SMTP + MIME saja
+./bin/gc-rg-email --date today --send    # kirim PDF attachment
 ```
 
-Windows uses Task Scheduler template in:
+Untuk otomasi harian di Linux, pakai template systemd di `assets/systemd/` dan contoh env di `assets/env/gc-rg.env.example`.
 
-```text
-deploy/windows/gc-rg-email-daily-task.xml
-scripts/run-daily-email.cmd
-```
+Untuk panduan lengkap, referensi konfigurasi, arsitektur, setup scheduler, dan catatan desain, lihat **[documentation.md](documentation.md)**.
 
-## Evidence inputs
+---
 
-Default evidence paths:
+## License / Lisensi
 
-```text
-evidence/grafana-longrange-validation/SUMMARY.json
-evidence/grafana-prometheus-validation/SUMMARY.json
-evidence/grafana-live-loki-scope-24h.json
-```
+Apache License 2.0. See [LICENSE](LICENSE).
 
-Default report output:
+## Author / Penulis
 
-```text
-reports/daily/{YYYY-MM-DD}-daily-monitoring-report.md
-reports/daily/{YYYY-MM-DD}-daily-monitoring-report.pdf
-```
-
-## Notes
-
-- PDF conversion uses Go `goldmark` + `go-wkhtmltopdf` and requires `wkhtmltopdf` in PATH.
-- `--dry-run` validates report files, SMTP config, and MIME generation without sending.
-- `--send` sends the PDF attachment through configured SMTP.
+[Muhammad Naufal Hanif](https://github.com/naufalmng) — built this so daily Grafana Cloud evidence can become a repeatable report, not a manual copy-paste ritual.
