@@ -19,8 +19,9 @@ GC_RG_EMAIL_FROM=your-email@gmail.com
 GC_RG_EMAIL_TO=ops@example.com,manager@example.com
 GC_RG_EMAIL_CC=
 GC_RG_EMAIL_SUBJECT_PREFIX=[GC-RG]
-GC_RG_REPORT_DIR=/opt/gc-rg/reports/daily
 GC_RG_WORKDIR=/opt/gc-rg
+GC_RG_REPORT_DIR=/opt/gc-rg/reports/daily
+GC_RG_EVIDENCE_DIR=/opt/gc-rg/evidence
 GC_RG_SCHEDULE_ON_CALENDAR="*-*-* 08:00:00"
 EOF
   chmod 0600 "$CONFIG_FILE"
@@ -33,8 +34,9 @@ show_config() {
   printf '  gc-rg config\n'
   printf '────────────────────────────────────────────────────────\n'
   printf '  %-30s : %s\n' "GC_RG_CONFIG_FILE" "$CONFIG_FILE"
-  printf '  %-30s : %s\n' "GC_RG_REPORT_DIR" "${GC_RG_REPORT_DIR:-${REPORT_DIR}}"
   printf '  %-30s : %s\n' "GC_RG_WORKDIR" "${GC_RG_WORKDIR:-${APP_DIR}}"
+  printf '  %-30s : %s\n' "GC_RG_REPORT_DIR" "${GC_RG_REPORT_DIR:-${REPORT_DIR}}"
+  printf '  %-30s : %s\n' "GC_RG_EVIDENCE_DIR" "${GC_RG_EVIDENCE_DIR:-${EVIDENCE_DIR}}"
   printf '  %-30s : %s\n' "GC_RG_EMAIL_PROVIDER" "${GC_RG_EMAIL_PROVIDER:-<unset>}"
   printf '  %-30s : %s\n' "GC_RG_SMTP_HOST" "${GC_RG_SMTP_HOST:-<unset>}"
   printf '  %-30s : %s\n' "GC_RG_SMTP_USERNAME" "${GC_RG_SMTP_USERNAME:-<unset>}"

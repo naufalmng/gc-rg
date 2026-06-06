@@ -185,8 +185,9 @@ GC_RG_EMAIL_FROM=your-email@gmail.com
 GC_RG_EMAIL_TO=ops@example.com,manager@example.com
 GC_RG_EMAIL_CC=
 GC_RG_EMAIL_SUBJECT_PREFIX=[GC-RG]
-GC_RG_REPORT_DIR=/opt/gc-rg/reports/daily
 GC_RG_WORKDIR=/opt/gc-rg
+GC_RG_REPORT_DIR=/opt/gc-rg/reports/daily
+GC_RG_EVIDENCE_DIR=/opt/gc-rg/evidence
 GC_RG_SCHEDULE_ON_CALENDAR="*-*-* 08:00:00"
 EOF
 }

@@ -71,6 +71,15 @@ runtime_help="$("${ROOT}/dist/gc-rg" help)"
 [[ "$runtime_help" == *"gc-rg onboard"* ]] || fail "runtime help misses onboard"
 [[ "$runtime_help" == *"gcrg"* ]] || fail "runtime help misses gcrg"
 [[ "$runtime_help" == *"gc-rg run"* ]] || fail "runtime help misses run"
+if grep -q 'run_generate || true' "${ROOT}/src/tool/06-report.sh"; then
+  fail "onboard must not auto-generate before evidence exists"
+fi
+if grep -q 'run_send || true' "${ROOT}/src/tool/06-report.sh"; then
+  fail "onboard must not auto-send before report exists"
+fi
+if ! grep -q 'GC_RG_EVIDENCE_DIR=/opt/gc-rg/evidence' "$INSTALLER"; then
+  fail "installer config misses consistent evidence dir"
+fi
 [[ "$runtime_help" == *"gc-rg schedule"* ]] || fail "runtime help misses schedule"
 
 if ! grep -q 'OnCalendar=' "${ROOT}/assets/systemd/gc-rg.timer"; then

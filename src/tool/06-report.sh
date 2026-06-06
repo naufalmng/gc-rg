@@ -4,7 +4,12 @@ run_generate() {
   local bin=""
   source_config
   bin="$(runtime_bin gc-rg-generate "$GENERATE_BIN")" || return 1
-  "$bin" --date "$DATE_VALUE"
+  "$bin" \
+    --date "$DATE_VALUE" \
+    --output-dir "${GC_RG_REPORT_DIR:-$REPORT_DIR}" \
+    --long-range-json "${GC_RG_EVIDENCE_DIR:-$EVIDENCE_DIR}/grafana-longrange-validation/SUMMARY.json" \
+    --latest-json "${GC_RG_EVIDENCE_DIR:-$EVIDENCE_DIR}/grafana-prometheus-validation/SUMMARY.json" \
+    --loki-scope-json "${GC_RG_EVIDENCE_DIR:-$EVIDENCE_DIR}/grafana-live-loki-scope-24h.json"
 }
 
 run_send() {
@@ -33,7 +38,13 @@ Onboard plan:
   2. Enable systemd timer:
      ${TIMER_NAME}
 
-  3. Generate first report and validate email dry-run.
+  3. Show next steps for evidence import, report generation, and email dry-run.
+
+Fresh install does not generate or send yet because no evidence exists by default.
+Expected evidence layout:
+  ${EVIDENCE_DIR}/grafana-longrange-validation/SUMMARY.json
+  ${EVIDENCE_DIR}/grafana-prometheus-validation/SUMMARY.json
+  ${EVIDENCE_DIR}/grafana-live-loki-scope-24h.json
 EOF
   if ! confirm "Continue onboard?"; then
     info "cancelled"
@@ -41,9 +52,22 @@ EOF
   fi
   write_default_config
   enable_timer
-  run_generate || true
-  DRY_RUN="true"
-  SEND_MODE="false"
-  run_send || true
+  cat <<EOF
+
+Next steps:
+  1. Put validated Grafana evidence under:
+     ${EVIDENCE_DIR}
+
+  2. Generate report after evidence exists:
+     sudo gc-rg generate
+
+  3. Validate email config without sending:
+     sudo gc-rg send --dry-run
+
+  4. Send manually when ready:
+     sudo gc-rg send --send
+
+Timer is enabled, but first scheduled run also requires evidence and SMTP config.
+EOF
   show_status
 }
