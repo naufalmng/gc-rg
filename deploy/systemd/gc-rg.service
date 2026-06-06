@@ -1,0 +1,18 @@
+[Unit]
+Description=Grafana Cloud Report Generator daily email
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/gc-rg
+EnvironmentFile=/etc/gc-rg/gc-rg.env
+ExecStart=/opt/gc-rg/bin/gc-rg-generate --date today
+ExecStart=/opt/gc-rg/bin/gc-rg-email --date today --report-dir ${GC_RG_REPORT_DIR} --send
+User=gc-rg
+Group=gc-rg
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/opt/gc-rg/reports /opt/gc-rg/tmp

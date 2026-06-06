@@ -1,0 +1,280 @@
+[
+  {
+    "name": "jobs_up",
+    "status": 200,
+    "frames": 2,
+    "rows": [
+      {
+        "labels": {
+          "job": "integrations/mysql"
+        },
+        "value": 1
+      },
+      {
+        "labels": {
+          "job": "integrations/node_exporter"
+        },
+        "value": 2
+      }
+    ],
+    "notices": []
+  },
+  {
+    "name": "instances_up",
+    "status": 200,
+    "frames": 3,
+    "rows": [
+      {
+        "labels": {
+          "instance": "xtra-db-qa-cloned",
+          "job": "integrations/mysql"
+        },
+        "value": 1
+      },
+      {
+        "labels": {
+          "instance": "xtra-db-qa-cloned",
+          "job": "integrations/node_exporter"
+        },
+        "value": 1
+      },
+      {
+        "labels": {
+          "instance": "xtra-qa-newtech",
+          "job": "integrations/node_exporter"
+        },
+        "value": 1
+      }
+    ],
+    "notices": []
+  },
+  {
+    "name": "linux_up",
+    "status": 200,
+    "frames": 2,
+    "rows": [
+      {
+        "labels": {
+          "__name__": "up",
+          "instance": "xtra-db-qa-cloned",
+          "job": "integrations/node_exporter"
+        },
+        "value": 1
+      },
+      {
+        "labels": {
+          "__name__": "up",
+          "instance": "xtra-qa-newtech",
+          "job": "integrations/node_exporter"
+        },
+        "value": 1
+      }
+    ],
+    "notices": []
+  },
+  {
+    "name": "mysql_up",
+    "status": 200,
+    "frames": 1,
+    "rows": [
+      {
+        "labels": {
+          "__name__": "mysql_up",
+          "instance": "xtra-db-qa-cloned",
+          "job": "integrations/mysql"
+        },
+        "value": 1
+      }
+    ],
+    "notices": []
+  },
+  {
+    "name": "cpu_usage",
+    "status": 200,
+    "frames": 2,
+    "rows": [
+      {
+        "labels": {
+          "instance": "xtra-db-qa-cloned"
+        },
+        "value": 1.3208333333386668
+      },
+      {
+        "labels": {
+          "instance": "xtra-qa-newtech"
+        },
+        "value": 2.1604166666656988
+      }
+    ],
+    "notices": []
+  },
+  {
+    "name": "memory_usage",
+    "status": 200,
+    "frames": 2,
+    "rows": [
+      {
+        "labels": {
+          "instance": "xtra-db-qa-cloned",
+          "job": "integrations/node_exporter"
+        },
+        "value": 24.384893803197837
+      },
+      {
+        "labels": {
+          "instance": "xtra-qa-newtech",
+          "job": "integrations/node_exporter"
+        },
+        "value": 44.340503468938806
+      }
+    ],
+    "notices": []
+  },
+  {
+    "name": "disk_usage",
+    "status": 200,
+    "frames": 6,
+    "rows": [
+      {
+        "labels": {
+          "device": "/dev/root",
+          "fstype": "ext4",
+          "instance": "xtra-qa-newtech",
+          "job": "integrations/node_exporter",
+          "mountpoint": "/"
+        },
+        "value": 50.72444827723985
+      },
+      {
+        "labels": {
+          "device": "/dev/sda1",
+          "fstype": "ext4",
+          "instance": "xtra-db-qa-cloned",
+          "job": "integrations/node_exporter",
+          "mountpoint": "/"
+        },
+        "value": 19.086178267185904
+      },
+      {
+        "labels": {
+          "device": "/dev/sda15",
+          "fstype": "vfat",
+          "instance": "xtra-db-qa-cloned",
+          "job": "integrations/node_exporter",
+          "mountpoint": "/boot/efi"
+        },
+        "value": 4.9977540287109985
+      },
+      {
+        "labels": {
+          "device": "/dev/sda15",
+          "fstype": "vfat",
+          "instance": "xtra-qa-newtech",
+          "job": "integrations/node_exporter",
+          "mountpoint": "/boot/efi"
+        },
+        "value": 5.84986637836219
+      },
+      {
+        "labels": {
+          "device": "/dev/sda16",
+          "fstype": "ext4",
+          "instance": "xtra-qa-newtech",
+          "job": "integrations/node_exporter",
+          "mountpoint": "/boot"
+        },
+        "value": 20.709912148371636
+      },
+      {
+        "labels": {
+          "device": "lxcfs",
+          "fstype": "fuse.lxcfs",
+          "instance": "xtra-db-qa-cloned",
+          "job": "integrations/node_exporter",
+          "mountpoint": "/var/lib/lxcfs"
+        },
+        "value": null
+      }
+    ],
+    "notices": []
+  },
+  {
+    "name": "mysql_conn_pct",
+    "status": 200,
+    "frames": 1,
+    "rows": [
+      {
+        "labels": {
+          "instance": "xtra-db-qa-cloned",
+          "job": "integrations/mysql"
+        },
+        "value": 0.6622516556291391
+      }
+    ],
+    "notices": []
+  },
+  {
+    "name": "mysql_slow_rate",
+    "status": 200,
+    "frames": 1,
+    "rows": [
+      {
+        "labels": {
+          "instance": "xtra-db-qa-cloned",
+          "job": "integrations/mysql"
+        },
+        "value": 0
+      }
+    ],
+    "notices": [
+      {
+        "severity": "info",
+        "text": "PromQL info: metric might not be a counter, name does not end in _total/_sum/_count/_bucket: \"mysql_global_status_slow_queries\" (1:29)"
+      }
+    ]
+  },
+  {
+    "name": "mysql_aborted_rate",
+    "status": 200,
+    "frames": 1,
+    "rows": [
+      {
+        "labels": {
+          "instance": "xtra-db-qa-cloned",
+          "job": "integrations/mysql"
+        },
+        "value": 0
+      }
+    ],
+    "notices": [
+      {
+        "severity": "info",
+        "text": "PromQL info: metric might not be a counter, name does not end in _total/_sum/_count/_bucket: \"mysql_global_status_aborted_connects\" (1:29)"
+      }
+    ]
+  },
+  {
+    "name": "loki_mysql_stream",
+    "status": 200,
+    "frames": 1,
+    "rows": [
+      {
+        "labels": {},
+        "value": null
+      }
+    ],
+    "notices": []
+  },
+  {
+    "name": "loki_mysql_error",
+    "status": 200,
+    "frames": 1,
+    "rows": [
+      {
+        "labels": {},
+        "value": null
+      }
+    ],
+    "notices": []
+  }
+]

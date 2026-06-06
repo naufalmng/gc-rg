@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Grafana Cloud Report Generator daily
+
+[Timer]
+OnCalendar=*-*-* 08:00:00
+Persistent=true
+RandomizedDelaySec=5m
+Unit=gc-rg.service
+
+[Install]
+WantedBy=timers.target

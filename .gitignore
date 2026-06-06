@@ -1,0 +1,8 @@
+bin/
+tmp/
+.wa-go/
+*.exe
+*.log
+.env
+.env.*
+!deploy/env/*.env.example
