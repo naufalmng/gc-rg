@@ -14,18 +14,18 @@ run_generate() {
 
 run_send() {
   local bin=""
-  local mode="--dry-run"
+  local mode="--send"
   source_config
   bin="$(runtime_bin gc-rg-email "$EMAIL_BIN")" || return 1
-  if [[ "$SEND_MODE" == "true" ]]; then
-    mode="--send"
+  if [[ "$DRY_RUN" == "true" ]]; then
+    mode="--dry-run"
   fi
   "$bin" --date "$DATE_VALUE" --report-dir "${GC_RG_REPORT_DIR:-$REPORT_DIR}" "$mode"
 }
 
 run_all() {
   run_generate || return 1
-  SEND_MODE="true"
+  DRY_RUN="false"
   run_send
 }
 
@@ -71,7 +71,7 @@ Next steps:
      sudo gc-rg send --dry-run
 
   4. Send for real:
-     sudo gc-rg send --send
+     sudo gc-rg send
 
 Timer is enabled. First scheduled run uses sample evidence until real evidence replaces it.
 EOF

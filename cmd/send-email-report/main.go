@@ -48,8 +48,8 @@ func run(args []string, env map[string]string) error {
 	if date == "today" {
 		date = time.Now().Format(time.DateOnly)
 	}
-	if !dryRun && !sendNow {
-		dryRun = true
+	if sendNow && dryRun {
+		return fmt.Errorf("--send and --dry-run cannot be used together")
 	}
 	config, err := email.ParseConfig(emailArgs, env)
 	if err != nil {

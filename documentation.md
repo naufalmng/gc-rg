@@ -77,7 +77,7 @@ The installer builds a local `.deb`, installs Linux release binaries into
 | `gc-rg config smtp` | Create/update SMTP config |
 | `gc-rg generate --date today` | Generate Markdown + PDF |
 | `gc-rg send --dry-run` | Validate report, SMTP config, MIME only |
-| `gc-rg send --send` | Send PDF attachment through SMTP |
+| `gc-rg send` | Send PDF attachment through SMTP |
 | `gc-rg run --date today` | Generate report, then send email |
 | `gc-rg schedule` | Show systemd timer schedule |
 | `gc-rg status` | Show timer, service, and latest report state |
@@ -219,7 +219,7 @@ gc-rg generate
   ↓
 reports/daily/YYYY-MM-DD-daily-monitoring-report.{md,pdf}
   ↓
-gc-rg send --send
+gc-rg send
   ↓
 operator inbox
 ```
@@ -362,7 +362,7 @@ install `/usr/bin/gc-rg`, tambah `/usr/bin/gcrg`, buat
 | `gc-rg config smtp` | Buat/update config SMTP |
 | `gc-rg generate --date today` | Generate Markdown + PDF |
 | `gc-rg send --dry-run` | Validasi report, config SMTP, MIME saja |
-| `gc-rg send --send` | Kirim PDF attachment lewat SMTP |
+| `gc-rg send` | Kirim PDF attachment lewat SMTP |
 | `gc-rg run --date today` | Generate report, lalu kirim email |
 | `gc-rg schedule` | Tampilkan jadwal systemd timer |
 | `gc-rg status` | Tampilkan timer, service, dan report terbaru |
@@ -504,7 +504,7 @@ gc-rg generate
   ↓
 reports/daily/YYYY-MM-DD-daily-monitoring-report.{md,pdf}
   ↓
-gc-rg send --send
+gc-rg send
   ↓
 inbox operator
 ```

@@ -37,7 +37,7 @@ Options:
   -q, --quiet                 less output
   -y, --yes                   assume yes
   -f, --force                 overwrite where relevant
-      --send                  send email instead of dry-run
+      --send                  deprecated; send is default
       --dry-run               validate without SMTP delivery
   -h, --help                  show help
 

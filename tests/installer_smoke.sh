@@ -105,6 +105,12 @@ if ! grep -q '"$MAIN_TOOL" evidence scaffold' "$INSTALLER"; then
 fi
 [[ "$runtime_help" == *"gc-rg schedule"* ]] || fail "runtime help misses schedule"
 [[ "$runtime_help" == *"gc-rg evidence scaffold"* ]] || fail "runtime help misses evidence scaffold"
+if ! grep -q 'local mode="--send"' "${ROOT}/dist/gc-rg"; then
+  fail "send should default to real delivery"
+fi
+if ! grep -q 'deprecated; send is default' "${ROOT}/dist/gc-rg"; then
+  fail "send help should mark --send deprecated"
+fi
 
 if ! grep -q 'OnCalendar=' "${ROOT}/assets/systemd/gc-rg.timer"; then
   fail "timer misses OnCalendar"

@@ -34,3 +34,24 @@ func TestRun_DryRunValidatesWithoutSending(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
+
+
+func TestRun_SendAndDryRunConflict(t *testing.T) {
+	dir := t.TempDir()
+	reportDir := filepath.Join(dir, "reports")
+	if err := os.MkdirAll(reportDir, 0o700); err != nil {
+		t.Fatalf("mkdir report dir: %v", err)
+	}
+	env := map[string]string{
+		"GC_RG_EMAIL_PROVIDER": "gmail",
+		"GC_RG_EMAIL_FROM":     "sender@gmail.com",
+		"GC_RG_EMAIL_TO":       "ops@example.com",
+		"GC_RG_SMTP_USERNAME":  "sender@gmail.com",
+		"GC_RG_SMTP_PASSWORD":  "app-password",
+	}
+
+	err := run([]string{"--report-dir", reportDir, "--send", "--dry-run"}, env)
+	if err == nil {
+		t.Fatal("expected conflict error")
+	}
+}
