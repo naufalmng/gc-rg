@@ -36,6 +36,7 @@ func run(args []string, env map[string]string) error {
 	flags.Func("smtp-host", "SMTP host", collectValue(&emailArgs, "smtp-host"))
 	flags.Func("smtp-port", "SMTP port", collectValue(&emailArgs, "smtp-port"))
 	flags.Func("smtp-tls", "SMTP TLS", collectValue(&emailArgs, "smtp-tls"))
+	flags.Func("smtp-helo-name", "SMTP HELO/EHLO name", collectValue(&emailArgs, "smtp-helo-name"))
 	flags.Func("email-from", "email from", collectValue(&emailArgs, "email-from"))
 	flags.Func("email-to", "email recipients", collectValue(&emailArgs, "email-to"))
 	flags.Func("email-cc", "email CC", collectValue(&emailArgs, "email-cc"))

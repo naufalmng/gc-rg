@@ -214,6 +214,7 @@ GC_RG_SMTP_HOST=smtp.gmail.com
 GC_RG_SMTP_PORT=587
 GC_RG_SMTP_TLS=starttls
 GC_RG_SMTP_AUTH=on
+GC_RG_SMTP_HELO_NAME=Superindo
 GC_RG_SMTP_USERNAME=your-email@gmail.com
 GC_RG_SMTP_PASSWORD=replace-with-app-password
 GC_RG_EMAIL_FROM=your-email@gmail.com

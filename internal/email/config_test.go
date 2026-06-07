@@ -7,11 +7,11 @@ import (
 
 func TestParseConfig_AppliesGmailDefaults(t *testing.T) {
 	env := map[string]string{
-		"GC_RG_EMAIL_PROVIDER":      "gmail",
-		"GC_RG_EMAIL_FROM":          "sender@gmail.com",
-		"GC_RG_EMAIL_TO":            "ops@example.com, manager@example.com",
-		"GC_RG_SMTP_USERNAME":       "sender@gmail.com",
-		"GC_RG_SMTP_PASSWORD":       "app-password",
+		"GC_RG_EMAIL_PROVIDER":       "gmail",
+		"GC_RG_EMAIL_FROM":           "sender@gmail.com",
+		"GC_RG_EMAIL_TO":             "ops@example.com, manager@example.com",
+		"GC_RG_SMTP_USERNAME":        "sender@gmail.com",
+		"GC_RG_SMTP_PASSWORD":        "app-password",
 		"GC_RG_EMAIL_SUBJECT_PREFIX": "[GC-RG]",
 	}
 
@@ -30,6 +30,43 @@ func TestParseConfig_AppliesGmailDefaults(t *testing.T) {
 	}
 	if len(config.To) != 2 {
 		t.Fatalf("To count = %d, want 2", len(config.To))
+	}
+}
+
+func TestParseConfig_DefaultsHeloNameToSuperindo(t *testing.T) {
+	env := map[string]string{
+		"GC_RG_EMAIL_PROVIDER": "gmail",
+		"GC_RG_EMAIL_FROM":     "sender@gmail.com",
+		"GC_RG_EMAIL_TO":       "ops@example.com",
+		"GC_RG_SMTP_USERNAME":  "sender@gmail.com",
+		"GC_RG_SMTP_PASSWORD":  "app-password",
+	}
+
+	config, err := ParseConfig(nil, env)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if config.HeloName != "Superindo" {
+		t.Fatalf("HeloName = %q, want Superindo", config.HeloName)
+	}
+}
+
+func TestParseConfig_AllowsDynamicHeloName(t *testing.T) {
+	env := map[string]string{
+		"GC_RG_EMAIL_PROVIDER": "gmail",
+		"GC_RG_EMAIL_FROM":     "sender@gmail.com",
+		"GC_RG_EMAIL_TO":       "ops@example.com",
+		"GC_RG_SMTP_USERNAME":  "sender@gmail.com",
+		"GC_RG_SMTP_PASSWORD":  "app-password",
+		"GC_RG_SMTP_HELO_NAME": "monitoring-superindo-01",
+	}
+
+	config, err := ParseConfig([]string{"--smtp-helo-name", "reporter-01"}, env)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if config.HeloName != "reporter-01" {
+		t.Fatalf("HeloName = %q, want reporter-01", config.HeloName)
 	}
 }
 

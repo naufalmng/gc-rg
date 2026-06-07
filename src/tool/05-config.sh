@@ -38,6 +38,7 @@ write_config() {
     printf "GC_RG_SMTP_PORT=\"%s\"\n" "${GC_RG_SMTP_PORT:-587}"
     printf "GC_RG_SMTP_TLS=\"%s\"\n" "${GC_RG_SMTP_TLS:-starttls}"
     printf "GC_RG_SMTP_AUTH=\"%s\"\n" "${GC_RG_SMTP_AUTH:-on}"
+    printf "GC_RG_SMTP_HELO_NAME=\"%s\"\n" "$(quote_env "${GC_RG_SMTP_HELO_NAME:-Superindo}")"
     printf "GC_RG_SMTP_USERNAME=\"%s\"\n" "$(quote_env "${GC_RG_SMTP_USERNAME:-}")"
     printf "GC_RG_SMTP_PASSWORD=\"%s\"\n" "$(quote_env "${GC_RG_SMTP_PASSWORD:-}")"
     printf "GC_RG_EMAIL_FROM=\"%s\"\n" "$(quote_env "${GC_RG_EMAIL_FROM:-}")"
@@ -59,6 +60,7 @@ write_default_config() {
   provider_defaults
   GC_RG_SMTP_USERNAME="${GC_RG_SMTP_USERNAME:-your-email@gmail.com}"
   GC_RG_SMTP_PASSWORD="${GC_RG_SMTP_PASSWORD:-replace-with-app-password}"
+  GC_RG_SMTP_HELO_NAME="${GC_RG_SMTP_HELO_NAME:-Superindo}"
   GC_RG_EMAIL_FROM="${GC_RG_EMAIL_FROM:-your-email@gmail.com}"
   GC_RG_EMAIL_TO="${GC_RG_EMAIL_TO:-ops@example.com,manager@example.com}"
   GC_RG_EMAIL_SUBJECT_PREFIX="${GC_RG_EMAIL_SUBJECT_PREFIX:-[GC-RG]}"
@@ -134,6 +136,7 @@ configure_smtp_interactive() {
   source_config || true
   GC_RG_EMAIL_PROVIDER="${GC_RG_EMAIL_PROVIDER:-gmail}"
   GC_RG_EMAIL_SUBJECT_PREFIX="${GC_RG_EMAIL_SUBJECT_PREFIX:-[GC-RG]}"
+  GC_RG_SMTP_HELO_NAME="${GC_RG_SMTP_HELO_NAME:-Superindo}"
   printf '\nSMTP config target: %s\n' "$CONFIG_FILE"
   prompt_choice "GC_RG_EMAIL_PROVIDER" "Provider (gmail / outlook / yahoo / custom)" "gmail outlook yahoo custom"
   provider_defaults
@@ -141,6 +144,7 @@ configure_smtp_interactive() {
   prompt_value "GC_RG_EMAIL_FROM" "Email from"
   prompt_value "GC_RG_SMTP_USERNAME" "SMTP username"
   prompt_value "GC_RG_SMTP_PASSWORD" "SMTP app password"
+  prompt_value "GC_RG_SMTP_HELO_NAME" "SMTP HELO/EHLO name"
   if [[ "$GC_RG_EMAIL_PROVIDER" == "custom" ]]; then
     prompt_value "GC_RG_SMTP_HOST" "SMTP host"
     prompt_value "GC_RG_SMTP_PORT" "SMTP port"
@@ -168,6 +172,7 @@ show_config() {
   printf '  %-30s : %s\n' "GC_RG_EVIDENCE_DIR" "${GC_RG_EVIDENCE_DIR:-${EVIDENCE_DIR}}"
   printf '  %-30s : %s\n' "GC_RG_EMAIL_PROVIDER" "${GC_RG_EMAIL_PROVIDER:-<unset>}"
   printf '  %-30s : %s\n' "GC_RG_SMTP_HOST" "${GC_RG_SMTP_HOST:-<unset>}"
+  printf '  %-30s : %s\n' "GC_RG_SMTP_HELO_NAME" "${GC_RG_SMTP_HELO_NAME:-Superindo}"
   printf '  %-30s : %s\n' "GC_RG_SMTP_USERNAME" "${GC_RG_SMTP_USERNAME:-<unset>}"
   printf '  %-30s : %s\n' "GC_RG_SMTP_PASSWORD" "$(mask_value "${GC_RG_SMTP_PASSWORD:-}")"
   printf '  %-30s : %s\n' "GC_RG_EMAIL_TO" "${GC_RG_EMAIL_TO:-<unset>}"

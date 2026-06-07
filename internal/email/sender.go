@@ -42,6 +42,9 @@ func sendWithSSL(address string, config Config, recipients []string, message []b
 		return fmt.Errorf("create SMTP client: %w", err)
 	}
 	defer client.Close()
+	if err := client.Hello(config.HeloName); err != nil {
+		return fmt.Errorf("smtp hello: %w", err)
+	}
 	return sendWithClient(client, config, recipients, message)
 }
 
@@ -51,6 +54,9 @@ func sendWithOptionalStartTLS(address string, config Config, recipients []string
 		return fmt.Errorf("connect SMTP: %w", err)
 	}
 	defer client.Close()
+	if err := client.Hello(config.HeloName); err != nil {
+		return fmt.Errorf("smtp hello: %w", err)
+	}
 	if config.TLSMode == TLSModeStartTLS {
 		if err := client.StartTLS(&tls.Config{ServerName: config.Host, MinVersion: tls.VersionTLS12}); err != nil {
 			return fmt.Errorf("start SMTP TLS: %w", err)
@@ -60,9 +66,6 @@ func sendWithOptionalStartTLS(address string, config Config, recipients []string
 }
 
 func sendWithClient(client *smtp.Client, config Config, recipients []string, message []byte) error {
-	if err := client.Hello("localhost"); err != nil {
-		return fmt.Errorf("smtp hello: %w", err)
-	}
 	if config.AuthEnabled {
 		auth := smtp.PlainAuth("", config.Username, config.Password, config.Host)
 		if err := client.Auth(auth); err != nil {

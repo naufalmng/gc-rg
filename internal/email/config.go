@@ -22,6 +22,7 @@ type Config struct {
 	Host          string
 	Port          int
 	TLSMode       TLSMode
+	HeloName      string
 	From          string
 	To            []string
 	CC            []string
@@ -37,6 +38,7 @@ func ParseConfig(args []string, env map[string]string) (Config, error) {
 		Host:          valueFromEnv(env, "GC_RG_SMTP_HOST", ""),
 		Port:          intFromEnv(env, "GC_RG_SMTP_PORT", 587),
 		TLSMode:       TLSMode(valueFromEnv(env, "GC_RG_SMTP_TLS", string(TLSModeStartTLS))),
+		HeloName:      valueFromEnv(env, "GC_RG_SMTP_HELO_NAME", "Superindo"),
 		From:          valueFromEnv(env, "GC_RG_EMAIL_FROM", ""),
 		To:            splitRecipients(valueFromEnv(env, "GC_RG_EMAIL_TO", "")),
 		CC:            splitRecipients(valueFromEnv(env, "GC_RG_EMAIL_CC", "")),
@@ -50,6 +52,7 @@ func ParseConfig(args []string, env map[string]string) (Config, error) {
 	flags.StringVar(&config.Host, "smtp-host", config.Host, "SMTP host")
 	flags.IntVar(&config.Port, "smtp-port", config.Port, "SMTP port")
 	flags.StringVar((*string)(&config.TLSMode), "smtp-tls", string(config.TLSMode), "SMTP TLS: starttls, ssl, or none")
+	flags.StringVar(&config.HeloName, "smtp-helo-name", config.HeloName, "SMTP HELO/EHLO name")
 	flags.StringVar(&config.From, "email-from", config.From, "sender email address")
 	toRaw := strings.Join(config.To, ",")
 	ccRaw := strings.Join(config.CC, ",")
@@ -83,6 +86,9 @@ func ValidateConfig(config Config) error {
 	if config.TLSMode != TLSModeStartTLS && config.TLSMode != TLSModeSSL && config.TLSMode != TLSModeNone {
 		return errors.New("GC_RG_SMTP_TLS must be starttls, ssl, or none")
 	}
+	if strings.TrimSpace(config.HeloName) == "" {
+		return errors.New("GC_RG_SMTP_HELO_NAME is required")
+	}
 	if strings.TrimSpace(config.From) == "" {
 		return errors.New("GC_RG_EMAIL_FROM is required")
 	}
@@ -101,7 +107,7 @@ func ValidateConfig(config Config) error {
 func EnvMap() map[string]string {
 	keys := []string{
 		"GC_RG_EMAIL_PROVIDER", "GC_RG_SMTP_HOST", "GC_RG_SMTP_PORT", "GC_RG_SMTP_TLS",
-		"GC_RG_EMAIL_FROM", "GC_RG_EMAIL_TO", "GC_RG_EMAIL_CC", "GC_RG_SMTP_USERNAME",
+		"GC_RG_SMTP_HELO_NAME", "GC_RG_EMAIL_FROM", "GC_RG_EMAIL_TO", "GC_RG_EMAIL_CC", "GC_RG_SMTP_USERNAME",
 		"GC_RG_SMTP_PASSWORD", "GC_RG_SMTP_AUTH", "GC_RG_EMAIL_SUBJECT_PREFIX",
 	}
 	values := make(map[string]string, len(keys))
